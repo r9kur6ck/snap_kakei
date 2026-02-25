@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase/client';
 import CategoryPieChart from '@/components/charts/CategoryPieChart';
 import DailyBarChart from '@/components/charts/DailyBarChart';
 import MonthlyLineChart from '@/components/charts/MonthlyLineChart';
+import { useWallet } from '@/components/WalletProvider';
 
 interface Transaction {
     id: string;
@@ -26,6 +27,7 @@ interface Category {
 }
 
 export default function AnalyticsPage() {
+    const { activeWallet } = useWallet();
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [prevMonthTotal, setPrevMonthTotal] = useState<number>(0);
@@ -48,6 +50,7 @@ export default function AnalyticsPage() {
     const handleNextMonth = () => setCurrentMonth(prev => addMonths(prev, 1));
 
     useEffect(() => {
+        if (!activeWallet) return;
         const fetchData = async () => {
             setIsLoading(true);
             try {
@@ -62,7 +65,8 @@ export default function AnalyticsPage() {
                 // カテゴリ一覧
                 const { data: cats, error: catError } = await supabase
                     .from('categories')
-                    .select('id, name, color') as { data: Category[] | null; error: any };
+                    .select('id, name, color')
+                    .eq('wallet_id', activeWallet?.id || '') as { data: Category[] | null; error: any };
                 if (catError) throw catError;
                 setCategories(cats || []);
 
@@ -70,6 +74,7 @@ export default function AnalyticsPage() {
                 const { data: txs, error: txError } = await supabase
                     .from('transactions')
                     .select('id, amount, date, store_name, item_name, category_id, memo')
+                    .eq('wallet_id', activeWallet?.id || '')
                     .gte('date', startPath)
                     .lte('date', endPath)
                     .order('date', { ascending: false }) as { data: Transaction[] | null; error: any };
@@ -80,6 +85,7 @@ export default function AnalyticsPage() {
                 const { data: prevTxs, error: prevTxError } = await supabase
                     .from('transactions')
                     .select('amount')
+                    .eq('wallet_id', activeWallet?.id || '')
                     .gte('date', prevStartPath)
                     .lte('date', prevEndPath) as { data: { amount: number }[] | null; error: any };
                 if (prevTxError) throw prevTxError;
@@ -111,7 +117,7 @@ export default function AnalyticsPage() {
             }
         };
         fetchData();
-    }, [currentMonth]);
+    }, [currentMonth, activeWallet]);
 
     // 年間データ取得
     useEffect(() => {
@@ -125,6 +131,7 @@ export default function AnalyticsPage() {
                 const { data } = await supabase
                     .from('transactions')
                     .select('amount')
+                    .eq('wallet_id', activeWallet?.id || '')
                     .gte('date', s)
                     .lte('date', e) as { data: { amount: number }[] | null };
                 return {
@@ -136,7 +143,7 @@ export default function AnalyticsPage() {
             setYearlyData(results);
         };
         fetchYearly();
-    }, [viewMode, currentMonth]);
+    }, [viewMode, currentMonth, activeWallet]);
 
     // 取引の削除
     const handleDeleteTx = async (id: string) => {

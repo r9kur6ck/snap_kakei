@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase/client';
 import ReceiptScanner, { OcrResult } from '@/components/ReceiptScanner';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
+import { useWallet } from '@/components/WalletProvider';
 
 interface ScanHistoryItem {
     id: string;
@@ -19,17 +20,20 @@ interface ScanHistoryItem {
 
 export default function ScanPage() {
     const router = useRouter();
+    const { activeWallet } = useWallet();
     const [showScanner, setShowScanner] = useState(false);
     const [scanHistory, setScanHistory] = useState<ScanHistoryItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     // 最近のスキャン履歴を取得（直近20件）
     useEffect(() => {
+        if (!activeWallet) return;
         const fetchHistory = async () => {
             try {
                 const { data } = await supabase
                     .from('transactions')
                     .select('id, store_name, item_name, amount, date, created_at')
+                    .eq('wallet_id', activeWallet?.id || '')
                     .order('created_at', { ascending: false })
                     .limit(20) as { data: ScanHistoryItem[] | null };
                 setScanHistory(data || []);
@@ -40,7 +44,7 @@ export default function ScanPage() {
             }
         };
         fetchHistory();
-    }, []);
+    }, [activeWallet]);
 
     // スキャン完了ハンドラ（複数レシート対応）
     const handleScanComplete = (results: OcrResult[]) => {

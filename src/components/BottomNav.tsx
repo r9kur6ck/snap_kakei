@@ -3,9 +3,16 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, PieChart, PlusCircle, Settings, Camera } from 'lucide-react';
+import { useAuth } from '@/components/AuthProvider';
 
 export default function BottomNav() {
     const pathname = usePathname();
+    const { user } = useAuth();
+
+    // ログインページではナビゲーションを非表示
+    if (pathname.startsWith('/login') || !user) {
+        return null;
+    }
 
     const navItems = [
         { name: 'ホーム', href: '/', icon: Home },
@@ -28,8 +35,8 @@ export default function BottomNav() {
                                 <Link
                                     href={item.href}
                                     className={`flex items-center justify-center w-14 h-14 rounded-full shadow-lg transition-all active:scale-95 ${isActive
-                                            ? 'bg-blue-600 text-white shadow-blue-300'
-                                            : 'bg-blue-600 text-white shadow-blue-200'
+                                        ? 'bg-blue-600 text-white shadow-blue-300'
+                                        : 'bg-blue-600 text-white shadow-blue-200'
                                         }`}
                                 >
                                     <Icon size={26} strokeWidth={2} />

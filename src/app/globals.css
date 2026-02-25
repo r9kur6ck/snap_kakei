@@ -40,13 +40,27 @@ body {
 
 /* フェードインアニメーション */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-fade-in {
@@ -61,14 +75,28 @@ body {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
 
 /* 入力フィールドのモバイル最適化 */
-input, select, textarea {
-  font-size: 16px !important; /* iOS zoom 防止 */
+input,
+select,
+textarea {
+  font-size: 16px !important;
+  /* iOS zoom 防止 */
+}
+
+/* ブラウザ標準のパスワード表示ボタンを非表示 */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
+input::-webkit-credentials-auto-fill-button {
+  display: none !important;
 }
 
 /* タッチフレンドリーなボタン */

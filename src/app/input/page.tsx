@@ -6,6 +6,7 @@ import { Camera, Calendar, Tag, Store, ShoppingBag, AlignLeft, Plus, Trash2 } fr
 import { supabase } from '@/lib/supabase/client';
 import ReceiptScanner, { OcrResult } from '@/components/ReceiptScanner';
 import { Database } from '@/types/database.types';
+import { useWallet } from '@/components/WalletProvider';
 
 interface TransactionFormItem {
     id: string; // React key用のユニークID
@@ -16,6 +17,7 @@ interface TransactionFormItem {
 }
 
 export default function InputPage() {
+    const { activeWallet } = useWallet();
     const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
     const [storeName, setStoreName] = useState('');
 
@@ -109,11 +111,13 @@ export default function InputPage() {
 
     // マウント時にカテゴリ一覧をSupabaseから取得
     useEffect(() => {
+        if (!activeWallet) return;
         const fetchCategories = async () => {
             try {
                 const { data, error } = await supabase
                     .from('categories')
                     .select('id, name')
+                    .eq('wallet_id', activeWallet?.id || '')
                     .order('created_at') as { data: { id: string; name: string }[] | null, error: any };
 
                 if (error) throw error;
@@ -235,7 +239,7 @@ export default function InputPage() {
         };
 
         fetchCategories();
-    }, []);
+    }, [activeWallet]);
 
     // 明細行の追加
     const handleAddItem = () => {
@@ -298,6 +302,7 @@ export default function InputPage() {
         try {
             // Supabaseへ複数行の支出データを一括保存 (バルクインサート)
             const insertData = validItems.map(item => ({
+                wallet_id: activeWallet?.id,
                 amount: Number(item.amount),
                 date: date,
                 store_name: storeName || null,

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Trash2, Home, Zap, Wifi, CreditCard, Landmark, Tag, Download, Pencil, Check } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import { useWallet } from '@/components/WalletProvider';
 
 interface FixedCost {
     id: string;
@@ -38,6 +39,7 @@ const FIXED_COST_PRESETS = [
 ];
 
 export default function SettingsPage() {
+    const { activeWallet } = useWallet();
     const [fixedCosts, setFixedCosts] = useState<FixedCost[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -67,11 +69,13 @@ export default function SettingsPage() {
 
     // データ取得
     useEffect(() => {
+        if (!activeWallet) return;
         const fetchData = async () => {
             try {
                 const { data: cats } = await supabase
                     .from('categories')
-                    .select('id, name, color') as { data: Category[] | null; error: any };
+                    .select('id, name, color')
+                    .eq('wallet_id', activeWallet?.id || '') as { data: Category[] | null; error: any };
                 setCategories(cats || []);
                 if (cats && cats.length > 0) {
                     setNewCategoryId(cats[0].id);
@@ -80,6 +84,7 @@ export default function SettingsPage() {
                 const { data: costs } = await supabase
                     .from('fixed_costs')
                     .select('id, name, amount, date_of_month, category_id')
+                    .eq('wallet_id', activeWallet?.id || '')
                     .order('date_of_month') as { data: FixedCost[] | null; error: any };
                 setFixedCosts(costs || []);
             } catch (err) {
@@ -89,19 +94,29 @@ export default function SettingsPage() {
             }
         };
         fetchData();
-    }, []);
+    }, [activeWallet]);
 
-    // 予算の読み込み
+    // 予算の読み込み (walletから)
     useEffect(() => {
-        const saved = localStorage.getItem('snap_kakei_budget');
-        if (saved) setMonthlyBudget(saved);
-    }, []);
+        if (activeWallet) {
+            setMonthlyBudget(String(activeWallet.monthly_budget || 150000));
+        }
+    }, [activeWallet]);
 
-    // 予算の保存
-    const handleSaveBudget = () => {
-        localStorage.setItem('snap_kakei_budget', monthlyBudget);
-        setBudgetSaved(true);
-        setTimeout(() => setBudgetSaved(false), 2000);
+    // 予算の保存 (walletに保存)
+    const handleSaveBudget = async () => {
+        if (!activeWallet) return;
+        try {
+            const { error } = await (supabase.from('wallets') as any)
+                .update({ monthly_budget: Number(monthlyBudget) })
+                .eq('id', activeWallet.id);
+            if (error) throw error;
+            setBudgetSaved(true);
+            setTimeout(() => setBudgetSaved(false), 2000);
+        } catch (err) {
+            console.error('Budget save failed:', err);
+            alert('予算の保存に失敗しました');
+        }
     };
 
     // CSVエクスポート
@@ -110,6 +125,7 @@ export default function SettingsPage() {
             const { data: txs, error } = await supabase
                 .from('transactions')
                 .select('date, store_name, item_name, amount, category_id, memo')
+                .eq('wallet_id', activeWallet?.id || '')
                 .order('date', { ascending: false }) as { data: any[] | null; error: any };
             if (error) throw error;
             if (!txs || txs.length === 0) {
@@ -146,6 +162,7 @@ export default function SettingsPage() {
             const { data, error } = await supabase
                 .from('fixed_costs')
                 .insert({
+                    wallet_id: activeWallet?.id,
                     user_id: '00000000-0000-0000-0000-000000000000',
                     name: newName,
                     amount: Number(newAmount),
@@ -189,11 +206,16 @@ export default function SettingsPage() {
 
     // カテゴリの新規追加
     const handleAddCategory = async (name: string, color: string) => {
+        // 重複チェック
+        if (categories.some(c => c.name === name)) {
+            alert('同じ名前のカテゴリが既に存在します');
+            return;
+        }
         setIsAddingCategory(true);
         try {
             const { data, error } = await supabase
                 .from('categories')
-                .insert({ name, color } as any)
+                .insert({ name, color, wallet_id: activeWallet?.id } as any)
                 .select() as { data: Category[] | null; error: any };
             if (error) throw error;
             if (data && data.length > 0) {

@@ -6,46 +6,56 @@ import ProgressBar from "@/components/ui/ProgressBar";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ja } from "date-fns/locale";
 import { supabase } from '@/lib/supabase/client';
-import { Bell } from 'lucide-react';
+import { Bell, LogOut } from 'lucide-react';
+import { useAuth } from '@/components/AuthProvider';
+import { useWallet } from '@/components/WalletProvider';
 
 export default function Home() {
   const currentDate = new Date();
   const currentMonthStr = format(currentDate, 'yyyy年 M月', { locale: ja });
+  const { user, signOut } = useAuth();
+  const { activeWallet } = useWallet();
 
-  const [monthlyBudget, setMonthlyBudget] = useState(150000);
+  const monthlyBudget = activeWallet?.monthly_budget || 150000;
   const [currentSpend, setCurrentSpend] = useState(0);
   const [fixedCostTotal, setFixedCostTotal] = useState(0);
   const [upcomingFixedCosts, setUpcomingFixedCosts] = useState<{ name: string; amount: number; date_of_month: number }[]>([]);
   const [categoriesData, setCategoriesData] = useState<{ name: string, value: number, color: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 予算をlocalStorageから読み込み
   useEffect(() => {
-    const saved = localStorage.getItem('snap_kakei_budget');
-    if (saved) setMonthlyBudget(Number(saved));
-  }, []);
+    if (!activeWallet) return;
 
-  useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         const startPath = format(startOfMonth(currentDate), 'yyyy-MM-dd');
         const endPath = format(endOfMonth(currentDate), 'yyyy-MM-dd');
 
-        // 1. カテゴリ一覧を取得 (色のマッピング用)
-        const { data: catsMap, error: catError } = await supabase
-          .from('categories')
-          .select('id, name, color') as { data: { id: string; name: string; color: string | null }[] | null, error: any };
+        // 3つのクエリを並列実行
+        const [catsResult, txsResult, fcResult] = await Promise.all([
+          supabase
+            .from('categories')
+            .select('id, name, color')
+            .eq('wallet_id', activeWallet.id),
+          supabase
+            .from('transactions')
+            .select('amount, category_id')
+            .eq('wallet_id', activeWallet.id)
+            .gte('date', startPath)
+            .lte('date', endPath),
+          supabase
+            .from('fixed_costs')
+            .select('name, amount, date_of_month')
+            .eq('wallet_id', activeWallet.id),
+        ]);
 
-        if (catError) throw catError;
+        if (catsResult.error) throw catsResult.error;
+        if (txsResult.error) throw txsResult.error;
+        if (fcResult.error) throw fcResult.error;
 
-        // 2. 今月の支出を取得
-        const { data: txs, error: txError } = await supabase
-          .from('transactions')
-          .select('amount, category_id')
-          .gte('date', startPath)
-          .lte('date', endPath) as { data: { amount: number, category_id: string | null }[] | null, error: any };
-
-        if (txError) throw txError;
+        const catsMap = catsResult.data as { id: string; name: string; color: string | null }[];
+        const txs = txsResult.data as { amount: number; category_id: string | null }[];
+        const fixedCosts = fcResult.data as { name: string; amount: number; date_of_month: number }[];
 
         // 集計ロジック
         let total = 0;
@@ -63,16 +73,12 @@ export default function Home() {
           name: c.name,
           color: c.color || '#cccccc',
           value: categoryTotals[c.id || ''] || 0
-        })).filter(c => c.value > 0) || []; // 値が0のカテゴリは非表示
+        })).filter(c => c.value > 0) || [];
 
         setCurrentSpend(total);
         setCategoriesData(chartData);
 
-        // 3. 固定費を取得
-        const { data: fixedCosts, error: fcError } = await supabase
-          .from('fixed_costs')
-          .select('name, amount, date_of_month') as { data: { name: string; amount: number; date_of_month: number }[] | null, error: any };
-        if (fcError) throw fcError;
+        // 固定費の集計
         const fcTotal = (fixedCosts || []).reduce((sum, fc) => sum + Number(fc.amount), 0);
         setFixedCostTotal(fcTotal);
 
@@ -93,7 +99,7 @@ export default function Home() {
     };
 
     fetchDashboardData();
-  }, []);
+  }, [activeWallet]);
 
   const totalMonthly = currentSpend + fixedCostTotal;
   const remainingBudget = Math.max(monthlyBudget - totalMonthly, 0);
@@ -116,9 +122,13 @@ export default function Home() {
           </h1>
           <p className="text-sm text-gray-500 font-medium">{currentMonthStr}の家計簿</p>
         </div>
-        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center border-2 border-white shadow-sm shadow-blue-200">
-          <span className="text-lg">👤</span>
-        </div>
+        <button
+          onClick={signOut}
+          className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center border-2 border-white shadow-sm shadow-blue-200 hover:bg-red-100 transition-colors"
+          title="ログアウト"
+        >
+          <LogOut size={18} className="text-gray-500" />
+        </button>
       </header>
 
       {/* 残額サマリーカード */}

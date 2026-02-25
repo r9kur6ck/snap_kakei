@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import BottomNav from "@/components/BottomNav";
+import AuthProvider from "@/components/AuthProvider";
+import WalletProvider from "@/components/WalletProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,13 +44,17 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 min-h-screen flex text-gray-900`}
       >
-        {/* モバイルアプリのレイアウトを模倣するため、最大幅を制限して中央配置 */}
-        <div className="w-full max-w-md mx-auto bg-white flex flex-col min-h-screen relative shadow-2xl overflow-hidden">
-          <main className="flex-1 overflow-y-auto pb-20">
-            {children}
-          </main>
-          <BottomNav />
-        </div>
+        <AuthProvider>
+          <WalletProvider>
+            {/* モバイルアプリのレイアウトを模倣するため、最大幅を制限して中央配置 */}
+            <div className="w-full max-w-md mx-auto bg-white flex flex-col min-h-screen relative shadow-2xl overflow-hidden">
+              <main className="flex-1 overflow-y-auto pb-20">
+                {children}
+              </main>
+              <BottomNav />
+            </div>
+          </WalletProvider>
+        </AuthProvider>
       </body>
     </html>
   );
