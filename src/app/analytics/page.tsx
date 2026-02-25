@@ -415,7 +415,7 @@ export default function AnalyticsPage() {
                             <h2 className="text-sm font-bold text-gray-800 mb-2">🏷️ カテゴリ別</h2>
                             <CategoryPieChart data={categoriesData} />
                             <div className="mt-4 flex flex-col gap-2">
-                                {categoriesData
+                                {[...categoriesData]
                                     .sort((a, b) => b.value - a.value)
                                     .map(cat => {
                                         const percent = Math.round((cat.value / totalSpend) * 100);
