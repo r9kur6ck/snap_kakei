@@ -30,69 +30,81 @@ export default function InputPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [showScanner, setShowScanner] = useState(false);
 
-    // OCR結果を受け取ってフォームに反映するハンドラ
-    const handleScanComplete = (result: OcrResult) => {
-        if (result.date) setDate(result.date);
-        if (result.storeName) setStoreName(result.storeName);
+    // OCR結果を受け取ってフォームに反映するハンドラ（複数レシート対応）
+    const handleScanComplete = (results: OcrResult[]) => {
+        applyOcrResults(results, defaultCategoryId, categories);
+        setShowScanner(false);
+    };
 
-        let newItems: TransactionFormItem[] = [];
-        let itemsTotal = 0;
+    // OCR結果をフォームに適用するヘルパー
+    const applyOcrResults = (
+        results: OcrResult[],
+        defCatId: string,
+        cats: { id: string; name: string }[]
+    ) => {
+        if (results.length === 0) return;
 
-        if (result.items && result.items.length > 0) {
-            newItems = result.items.map((item, index) => {
-                let matchedCategoryId = defaultCategoryId;
+        // 最初のレシートの日付と店名を使う
+        const first = results[0];
+        if (first.date) setDate(first.date);
+        if (first.storeName) setStoreName(first.storeName);
 
-                // AIによる推測カテゴリ名(categoryName)と、DB上のカテゴリ名(name)をマッチング
-                if (item.categoryName) {
-                    const matchedCategory = categories.find(c => c.name.includes(item.categoryName!) || item.categoryName!.includes(c.name));
-                    if (matchedCategory) {
-                        matchedCategoryId = matchedCategory.id;
+        let allItems: TransactionFormItem[] = [];
+        const ts = Date.now();
+
+        results.forEach((result, rIdx) => {
+            let receiptItems: TransactionFormItem[] = [];
+            let itemsTotal = 0;
+
+            if (result.items && result.items.length > 0) {
+                receiptItems = result.items.map((item, index) => {
+                    let matchedCategoryId = defCatId;
+                    if (item.categoryName) {
+                        const found = cats.find(c => c.name.includes(item.categoryName!) || item.categoryName!.includes(c.name));
+                        if (found) matchedCategoryId = found.id;
+                    }
+                    const itemAmount = item.amount || 0;
+                    itemsTotal += itemAmount;
+                    return {
+                        id: `${ts}_${rIdx}_${index}`,
+                        amount: itemAmount ? itemAmount.toString() : '',
+                        itemName: item.itemName || '',
+                        categoryId: matchedCategoryId,
+                        memo: results.length > 1 ? `レシート${rIdx + 1}` : '',
+                    };
+                });
+
+                // 差額調整行
+                if (result.totalAmount && result.totalAmount > 0) {
+                    const diff = result.totalAmount - itemsTotal;
+                    if (diff !== 0) {
+                        receiptItems.push({
+                            id: `${ts}_${rIdx}_adj`,
+                            amount: diff.toString(),
+                            itemName: diff > 0 ? '消費税・調整分' : '割引・調整分',
+                            categoryId: defCatId,
+                            memo: results.length > 1 ? `レシート${rIdx + 1} 自動調整` : '自動調整',
+                        });
                     }
                 }
-
-                const itemAmount = item.amount || 0;
-                itemsTotal += itemAmount;
-
-                return {
-                    id: Date.now().toString() + index,
-                    amount: itemAmount ? itemAmount.toString() : '',
-                    itemName: item.itemName || '',
-                    categoryId: matchedCategoryId,
-                    memo: '',
-                };
-            });
-
-            // 総合計金額（totalAmount）との差額があれば、「調整（消費税・割引など）」として行を追加
-            if (result.totalAmount && result.totalAmount > 0) {
-                const diff = result.totalAmount - itemsTotal;
-                if (diff !== 0) {
-                    newItems.push({
-                        id: Date.now().toString() + '_adj',
-                        amount: diff.toString(),
-                        itemName: diff > 0 ? '消費税・調整分' : '割引・調整分',
-                        categoryId: defaultCategoryId,
-                        memo: '自動調整',
-                    });
-                }
-            }
-
-            setItems(newItems);
-        } else {
-            // OCR結果に項目がなくても、総合計があれば1行目に入れる
-            if (result.totalAmount && result.totalAmount > 0) {
-                setItems([{
-                    id: Date.now().toString(),
+            } else if (result.totalAmount && result.totalAmount > 0) {
+                receiptItems = [{
+                    id: `${ts}_${rIdx}_total`,
                     amount: result.totalAmount.toString(),
-                    itemName: 'スキャン結果',
-                    categoryId: defaultCategoryId,
-                    memo: ''
-                }]);
-            } else if (items.length === 0) {
-                handleAddItem();
+                    itemName: result.storeName || 'スキャン結果',
+                    categoryId: defCatId,
+                    memo: results.length > 1 ? `レシート${rIdx + 1}` : '',
+                }];
             }
-        }
 
-        setShowScanner(false); // スキャナーを閉じる
+            allItems = [...allItems, ...receiptItems];
+        });
+
+        if (allItems.length > 0) {
+            setItems(allItems);
+        } else if (items.length === 0) {
+            handleAddItem();
+        }
     };
 
     // マウント時にカテゴリ一覧をSupabaseから取得
@@ -110,16 +122,73 @@ export default function InputPage() {
                     setCategories(data);
                     setDefaultCategoryId(data[0].id); // 初期値をセット
 
-                    // スキャンページからの結果があれば反映
-                    const scanResultStr = localStorage.getItem('scan_result');
-                    if (scanResultStr) {
+                    // スキャンページからの結果があれば反映（複数レシート対応）
+                    const scanResultsStr = localStorage.getItem('scan_results');
+                    // 旧形式(scan_result)も後方互換として対応
+                    const legacyStr = localStorage.getItem('scan_result');
+                    if (scanResultsStr) {
+                        localStorage.removeItem('scan_results');
+                        try {
+                            const scanResults: OcrResult[] = JSON.parse(scanResultsStr);
+                            // applyOcrResultsはまだマウント中なので直接処理
+                            const first = scanResults[0];
+                            if (first?.date) setDate(first.date);
+                            if (first?.storeName) setStoreName(first.storeName);
+
+                            const ts = Date.now();
+                            let allItems: TransactionFormItem[] = [];
+                            scanResults.forEach((result, rIdx) => {
+                                let receiptItems: TransactionFormItem[] = [];
+                                let itemsTotal = 0;
+                                if (result.items && result.items.length > 0) {
+                                    receiptItems = result.items.map((item, index) => {
+                                        let matchedCategoryId = data[0].id;
+                                        if (item.categoryName) {
+                                            const found = data.find(c => c.name.includes(item.categoryName!));
+                                            if (found) matchedCategoryId = found.id;
+                                        }
+                                        const itemAmount = item.amount || 0;
+                                        itemsTotal += itemAmount;
+                                        return {
+                                            id: `${ts}_${rIdx}_${index}`,
+                                            amount: itemAmount ? itemAmount.toString() : '',
+                                            itemName: item.itemName || '',
+                                            categoryId: matchedCategoryId,
+                                            memo: scanResults.length > 1 ? `レシート${rIdx + 1}` : '',
+                                        };
+                                    });
+                                    if (result.totalAmount && result.totalAmount > 0) {
+                                        const diff = result.totalAmount - itemsTotal;
+                                        if (diff !== 0) {
+                                            receiptItems.push({
+                                                id: `${ts}_${rIdx}_adj`,
+                                                amount: diff.toString(),
+                                                itemName: diff > 0 ? '消費税・調整分' : '割引・調整分',
+                                                categoryId: data[0].id,
+                                                memo: scanResults.length > 1 ? `レシート${rIdx + 1} 自動調整` : '自動調整',
+                                            });
+                                        }
+                                    }
+                                } else if (result.totalAmount && result.totalAmount > 0) {
+                                    receiptItems = [{
+                                        id: `${ts}_${rIdx}_total`,
+                                        amount: result.totalAmount.toString(),
+                                        itemName: result.storeName || 'スキャン結果',
+                                        categoryId: data[0].id,
+                                        memo: scanResults.length > 1 ? `レシート${rIdx + 1}` : '',
+                                    }];
+                                }
+                                allItems = [...allItems, ...receiptItems];
+                            });
+                            if (allItems.length > 0) setItems(allItems);
+                        } catch { /* ignore parse error */ }
+                    } else if (legacyStr) {
+                        // 旧形式の単一結果を配列として処理
                         localStorage.removeItem('scan_result');
                         try {
-                            const scanResult: OcrResult = JSON.parse(scanResultStr);
-                            // handleScanComplete相当の処理を直接実行
+                            const scanResult: OcrResult = JSON.parse(legacyStr);
                             if (scanResult.date) setDate(scanResult.date);
                             if (scanResult.storeName) setStoreName(scanResult.storeName);
-
                             if (scanResult.items && scanResult.items.length > 0) {
                                 const newItems = scanResult.items.map((item, index) => {
                                     let matchedCategoryId = data[0].id;
@@ -132,7 +201,7 @@ export default function InputPage() {
                                         amount: item.amount?.toString() || '',
                                         itemName: item.itemName || '',
                                         categoryId: matchedCategoryId,
-                                        memo: ''
+                                        memo: '',
                                     };
                                 });
                                 setItems(newItems);
@@ -142,7 +211,7 @@ export default function InputPage() {
                                     amount: scanResult.totalAmount?.toString() || '',
                                     itemName: 'スキャン結果',
                                     categoryId: data[0].id,
-                                    memo: ''
+                                    memo: '',
                                 }]);
                             }
                         } catch { /* ignore parse error */ }

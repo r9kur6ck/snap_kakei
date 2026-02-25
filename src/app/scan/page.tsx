@@ -42,12 +42,12 @@ export default function ScanPage() {
         fetchHistory();
     }, []);
 
-    // スキャン完了ハンドラ
-    const handleScanComplete = (result: OcrResult) => {
+    // スキャン完了ハンドラ（複数レシート対応）
+    const handleScanComplete = (results: OcrResult[]) => {
         setShowScanner(false);
 
-        // 結果をlocalStorageに保存して入力ページに渡す
-        localStorage.setItem('scan_result', JSON.stringify(result));
+        // 複数結果をlocalStorageに保存して入力ページに渡す
+        localStorage.setItem('scan_results', JSON.stringify(results));
         router.push('/input?from=scan');
     };
 
