@@ -19,8 +19,8 @@ export async function POST(req: Request) {
     // Gemini API クライアントの初期化
     const genAI = new GoogleGenerativeAI(apiKey);
 
-    // 安定版の gemini-2.0-flash モデルを使用
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    // 最新の gemini-2.5-flash モデルを使用
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     const prompt = `
       あなたは優秀な入力をアシストするデータ抽出AIです。
