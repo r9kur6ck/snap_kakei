@@ -27,7 +27,7 @@ export default function CategoryPieChart({ data }: CategoryPieChartProps) {
 
     return (
         <div className="h-64 w-full relative">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
                 <PieChart>
                     <Pie
                         data={data}

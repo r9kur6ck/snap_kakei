@@ -18,7 +18,7 @@ export default function MonthlyLineChart({ data }: MonthlyLineChartProps) {
 
     return (
         <div className="h-48 w-full">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
                 <LineChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                     <XAxis
