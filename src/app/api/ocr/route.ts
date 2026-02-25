@@ -19,8 +19,8 @@ export async function POST(req: Request) {
     // Gemini API クライアントの初期化
     const genAI = new GoogleGenerativeAI(apiKey);
 
-    // 最新の gemini-2.5-flash モデルを使用
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    // 安定版の gemini-2.0-flash モデルを使用
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
     const prompt = `
       あなたは優秀な入力をアシストするデータ抽出AIです。
@@ -62,7 +62,11 @@ export async function POST(req: Request) {
 
     return NextResponse.json(parsedData, { status: 200 });
   } catch (error) {
-    console.error('OCR Route Error (Gemini):', error);
-    return NextResponse.json({ error: 'OCR処理に失敗しました。画像の形式や解像度を確認してください。' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('OCR Route Error (Gemini):', errorMessage);
+    return NextResponse.json(
+      { error: `OCR処理に失敗しました: ${errorMessage}` },
+      { status: 500 }
+    );
   }
 }
