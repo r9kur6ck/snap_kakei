@@ -14,13 +14,21 @@
 
 ## 🛠 技術スタック
 
-- **フロントエンド**: Next.js 16 (Turbopack) / React / TypeScript
+- **フロントエンド**: Next.js 16 (App Router) / React / TypeScript
 - **スタイリング**: Tailwind CSS v4
-- **データベース**: Supabase (PostgreSQL)
+- **認証**: Supabase Auth (Email / Password)
+- **データベース**: Supabase (PostgreSQL) + RLS (Row Level Security)
 - **OCR / AI**: Google Gemini API
 - **グラフ**: Recharts
 - **デプロイ**: Cloudflare Pages
 - **PWA**: ホーム画面追加対応
+
+## 🔒 セキュリティ & アーキテクチャ
+
+- **マルチユーザー対応**: Supabase Auth によりユーザーごとにデータを分離。
+- **ウォレットシステム**: `wallets` と `wallet_members` テーブルにより家計簿を管理。ユーザー登録時に自動で専用のウォレットとデフォルトカテゴリが初期化されます。
+- **RLS (Row Level Security)**: データベースレベルで強力なアクセス制御を行い、他のユーザーのデータには絶対にアクセスできない設計になっています。
+- **データマイグレーションAPI**: サポート用として孤立したデータを現在のウォレットに紐付けるリカバリー機能も実装済み。
 
 ## 🚀 セットアップ
 
@@ -32,14 +40,18 @@ npm install
 ```
 
 ### 2. 環境変数
-`.env.local` を作成:
+`.env.local` を作成し、各種キーを設定します:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 GEMINI_API_KEY=your_gemini_api_key
 ```
 
-### 3. 起動
+### 3. Supabase マイグレーション
+Supabase の SQL Editor にて、本リポジトリ直下の `supabase_migration.sql` を全文コピペして実行し、テーブル、RLSポリシー、およびトリガーを作成してください。
+
+### 4. 起動
 ```bash
 npm run dev
 ```
