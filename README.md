@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📸 Snap Kakei
 
-## Getting Started
+> 入力の手間を極限まで減らし、今の懐事情を瞬時に把握できるスマホ家計簿アプリ
 
-First, run the development server:
+## ✨ 主な機能
 
+| 機能 | 説明 |
+|------|------|
+| 📊 **ダッシュボード** | 予算進捗、カテゴリ別円グラフ、固定費引落予定を一目で確認 |
+| 📷 **レシートスキャン** | カメラでレシートを撮影→AIが店名・品目・金額を自動読み取り |
+| ✏️ **手動入力** | 複数明細の一括入力、AIカテゴリ自動提案 |
+| 📈 **分析** | 月別推移、日別棒グラフ、年間トレンド、支出ランキング |
+| ⚙️ **設定** | 固定費管理（CRUD）、月間予算設定、CSV エクスポート |
+
+## 🛠 技術スタック
+
+- **フロントエンド**: Next.js 16 (Turbopack) / React / TypeScript
+- **スタイリング**: Tailwind CSS v4
+- **データベース**: Supabase (PostgreSQL)
+- **OCR / AI**: Google Gemini API
+- **グラフ**: Recharts
+- **デプロイ**: Cloudflare Pages
+- **PWA**: ホーム画面追加対応
+
+## 🚀 セットアップ
+
+### 1. クローン & インストール
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/r9kur6ck/snap_kakei.git
+cd snap_kakei
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. 環境変数
+`.env.local` を作成:
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+GEMINI_API_KEY=your_gemini_api_key
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. 起動
+```bash
+npm run dev
+```
+http://localhost:3000 でアクセス
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📱 モバイル最適化
 
-## Learn More
+- iOS / Android のホーム画面に追加してアプリとして利用可能
+- 48px 最小タッチターゲット
+- iOS セーフエリア対応
+- 16px 入力フィールド（自動ズーム防止）
 
-To learn more about Next.js, take a look at the following resources:
+## 📁 ディレクトリ構成
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+src/
+├── app/
+│   ├── page.tsx          # ホーム（ダッシュボード）
+│   ├── analytics/        # 分析ページ
+│   ├── input/            # 手動入力ページ
+│   ├── scan/             # レシートスキャンページ
+│   ├── settings/         # 設定ページ
+│   └── api/ocr/          # OCR API Route
+├── components/
+│   ├── BottomNav.tsx      # ボトムナビゲーション
+│   ├── ReceiptScanner.tsx # レシート読み取りコンポーネント
+│   ├── charts/           # Recharts グラフ群
+│   └── ui/               # 汎用UIコンポーネント
+├── lib/supabase/         # Supabaseクライアント
+└── types/                # TypeScript型定義
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## ライセンス
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
