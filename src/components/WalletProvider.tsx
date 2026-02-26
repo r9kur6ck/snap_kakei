@@ -16,6 +16,7 @@ interface WalletContextType {
     activeWallet: Wallet | null;
     isLoading: boolean;
     setActiveWalletId: (id: string) => void;
+    refreshWallet: () => void;
 }
 
 const WalletContext = createContext<WalletContextType>({
@@ -23,6 +24,7 @@ const WalletContext = createContext<WalletContextType>({
     activeWallet: null,
     isLoading: true,
     setActiveWalletId: () => { },
+    refreshWallet: () => { },
 });
 
 export const useWallet = () => useContext(WalletContext);
@@ -93,10 +95,28 @@ export default function WalletProvider({ children }: { children: React.ReactNode
         }
     };
 
+    // ウォレット情報をDBから再取得して状態を更新する
+    const refreshWallet = async () => {
+        if (!activeWalletId) return;
+        try {
+            const { data, error } = await (supabase
+                .from('wallets')
+                .select('id, name, owner_id, monthly_budget')
+                .eq('id', activeWalletId)
+                .single() as any);
+            if (error) throw error;
+            if (data) {
+                setWallets(prev => prev.map(w => w.id === data.id ? data as Wallet : w));
+            }
+        } catch (err) {
+            console.error('Failed to refresh wallet:', err);
+        }
+    };
+
     const activeWallet = wallets.find(w => w.id === activeWalletId) || null;
 
     return (
-        <WalletContext.Provider value={{ wallets, activeWallet, isLoading, setActiveWalletId }}>
+        <WalletContext.Provider value={{ wallets, activeWallet, isLoading, setActiveWalletId, refreshWallet }}>
             {children}
         </WalletContext.Provider>
     );

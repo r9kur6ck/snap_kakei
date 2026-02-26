@@ -32,7 +32,7 @@ const getFixedCostIcon = (name: string) => {
 
 
 export default function SettingsPage() {
-    const { activeWallet } = useWallet();
+    const { activeWallet, refreshWallet } = useWallet();
     const [fixedCosts, setFixedCosts] = useState<FixedCost[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -104,6 +104,7 @@ export default function SettingsPage() {
                 .update({ monthly_budget: Number(monthlyBudget) })
                 .eq('id', activeWallet.id);
             if (error) throw error;
+            await refreshWallet();
             setBudgetSaved(true);
             setTimeout(() => setBudgetSaved(false), 2000);
         } catch (err) {
