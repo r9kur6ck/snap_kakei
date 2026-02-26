@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 const DEFAULT_CATEGORIES = [
+    // 変動費
     { name: '食費', type: 'expense', color: '#ef4444' },
     { name: '日用品', type: 'expense', color: '#f59e0b' },
     { name: '交通費', type: 'expense', color: '#3b82f6' },
@@ -11,6 +12,12 @@ const DEFAULT_CATEGORIES = [
     { name: '医療費', type: 'expense', color: '#10b981' },
     { name: '特別費', type: 'expense', color: '#6366f1' },
     { name: '趣味', type: 'expense', color: '#14b8a6' },
+    // 固定費
+    { name: '住居費', type: 'expense', color: '#7c3aed' },
+    { name: '光熱費', type: 'expense', color: '#d97706' },
+    { name: '通信費', type: 'expense', color: '#0284c7' },
+    { name: '保険料', type: 'expense', color: '#059669' },
+    { name: 'サブスク', type: 'expense', color: '#a855f7' },
 ];
 
 // ログイン済みユーザーのウォレットを初期化するAPI（冪等）
