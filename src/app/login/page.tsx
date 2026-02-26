@@ -21,6 +21,18 @@ export default function LoginPage() {
 
         try {
             if (isSignUp) {
+                // ホワイトリスト検証（サインアップ前にチェック）
+                const validateRes = await fetch('/api/validate-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email }),
+                });
+
+                if (!validateRes.ok) {
+                    const validateData = await validateRes.json().catch(() => ({}));
+                    throw new Error(validateData.error || 'このメールアドレスは招待されていません');
+                }
+
                 const { error } = await supabase.auth.signUp({
                     email,
                     password,
@@ -40,7 +52,9 @@ export default function LoginPage() {
             }
         } catch (err: any) {
             const message = err?.message || '不明なエラーが発生しました';
-            if (message.includes('Invalid login credentials')) {
+            if (message.includes('招待されていません')) {
+                setError('このメールアドレスは招待されていません。管理者にお問い合わせください。');
+            } else if (message.includes('Invalid login credentials')) {
                 setError('メールアドレスまたはパスワードが正しくありません');
             } else if (message.includes('already registered')) {
                 setError('このメールアドレスは既に登録されています');
@@ -72,9 +86,15 @@ export default function LoginPage() {
 
                 {/* フォーム */}
                 <div className="bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-gray-100">
-                    <h2 className="text-lg font-bold text-gray-800 text-center mb-5">
+                    <h2 className="text-lg font-bold text-gray-800 text-center mb-1">
                         {isSignUp ? 'アカウント作成' : 'ログイン'}
                     </h2>
+                    {isSignUp && (
+                        <p className="text-[11px] text-amber-600 text-center mb-4 bg-amber-50 rounded-lg px-3 py-2 border border-amber-200">
+                            🔒 招待されたメールアドレスのみ登録できます
+                        </p>
+                    )}
+                    {!isSignUp && <div className="mb-5" />}
 
                     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                         {/* メールアドレス */}

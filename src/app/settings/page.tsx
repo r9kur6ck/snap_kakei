@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Plus, Trash2, Home, Zap, Wifi, CreditCard, Landmark, Tag, Download, Pencil, Check } from 'lucide-react';
+import { Plus, Trash2, Home, Zap, Wifi, CreditCard, Landmark, Download, Pencil, Check } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useWallet } from '@/components/WalletProvider';
 
@@ -29,14 +29,7 @@ const getFixedCostIcon = (name: string) => {
     return CreditCard;
 };
 
-// 固定費向けプリセットカテゴリ
-const FIXED_COST_PRESETS = [
-    { name: '住居費', color: '#6366f1' },
-    { name: '光熱費', color: '#f59e0b' },
-    { name: '通信費', color: '#3b82f6' },
-    { name: '保険料', color: '#10b981' },
-    { name: 'サブスク', color: '#8b5cf6' },
-];
+
 
 export default function SettingsPage() {
     const { activeWallet } = useWallet();
@@ -51,7 +44,7 @@ export default function SettingsPage() {
     const [newDateOfMonth, setNewDateOfMonth] = useState('1');
     const [newCategoryId, setNewCategoryId] = useState('');
     const [isSaving, setIsSaving] = useState(false);
-    const [isAddingCategory, setIsAddingCategory] = useState(false);
+
 
     // 予算設定
     const [monthlyBudget, setMonthlyBudget] = useState('150000');
@@ -204,31 +197,7 @@ export default function SettingsPage() {
         }
     };
 
-    // カテゴリの新規追加
-    const handleAddCategory = async (name: string, color: string) => {
-        // 重複チェック
-        if (categories.some(c => c.name === name)) {
-            alert('同じ名前のカテゴリが既に存在します');
-            return;
-        }
-        setIsAddingCategory(true);
-        try {
-            const { data, error } = await supabase
-                .from('categories')
-                .insert({ name, color, wallet_id: activeWallet?.id } as any)
-                .select() as { data: Category[] | null; error: any };
-            if (error) throw error;
-            if (data && data.length > 0) {
-                setCategories(prev => [...prev, ...data]);
-                setNewCategoryId(data[0].id);
-            }
-        } catch (err) {
-            console.error('Failed to add category:', err);
-            alert('カテゴリの追加に失敗しました');
-        } finally {
-            setIsAddingCategory(false);
-        }
-    };
+
 
     // 固定費の編集開始
     const handleEditCost = (cost: FixedCost) => {
@@ -266,10 +235,7 @@ export default function SettingsPage() {
         return categories.find(c => c.id === id)?.name || '未分類';
     };
 
-    // 未登録のプリセットカテゴリを算出
-    const missingPresets = FIXED_COST_PRESETS.filter(
-        preset => !categories.some(c => c.name === preset.name)
-    );
+
 
     const totalFixed = fixedCosts.reduce((sum, c) => sum + Number(c.amount), 0);
 
@@ -357,25 +323,7 @@ export default function SettingsPage() {
                                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                                 ))}
                             </select>
-                            {/* プリセットカテゴリ追加ボタン */}
-                            {missingPresets.length > 0 && (
-                                <div className="mt-2">
-                                    <p className="text-[10px] text-gray-400 mb-1">カテゴリを追加:</p>
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {missingPresets.map(preset => (
-                                            <button
-                                                key={preset.name}
-                                                onClick={() => handleAddCategory(preset.name, preset.color)}
-                                                disabled={isAddingCategory}
-                                                className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600 hover:bg-blue-100 hover:text-blue-600 transition-colors disabled:opacity-50"
-                                            >
-                                                <Tag size={10} />
-                                                + {preset.name}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
+
                         </div>
                         <div className="flex gap-2">
                             <button

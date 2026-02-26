@@ -62,33 +62,38 @@ export default function AnalyticsPage() {
                 const prevStartPath = format(startOfMonth(prevMonth), 'yyyy-MM-dd');
                 const prevEndPath = format(endOfMonth(prevMonth), 'yyyy-MM-dd');
 
-                // カテゴリ一覧
-                const { data: cats, error: catError } = await supabase
-                    .from('categories')
-                    .select('id, name, color')
-                    .eq('wallet_id', activeWallet?.id || '') as { data: Category[] | null; error: any };
-                if (catError) throw catError;
-                setCategories(cats || []);
+                // 3つのクエリを並列実行
+                const [catsResult, txsResult, prevTxsResult] = await Promise.all([
+                    supabase
+                        .from('categories')
+                        .select('id, name, color')
+                        .eq('wallet_id', activeWallet?.id || ''),
+                    supabase
+                        .from('transactions')
+                        .select('id, amount, date, store_name, item_name, category_id, memo')
+                        .eq('wallet_id', activeWallet?.id || '')
+                        .gte('date', startPath)
+                        .lte('date', endPath)
+                        .order('date', { ascending: false }),
+                    supabase
+                        .from('transactions')
+                        .select('amount')
+                        .eq('wallet_id', activeWallet?.id || '')
+                        .gte('date', prevStartPath)
+                        .lte('date', prevEndPath),
+                ]);
 
-                // 今月の支出
-                const { data: txs, error: txError } = await supabase
-                    .from('transactions')
-                    .select('id, amount, date, store_name, item_name, category_id, memo')
-                    .eq('wallet_id', activeWallet?.id || '')
-                    .gte('date', startPath)
-                    .lte('date', endPath)
-                    .order('date', { ascending: false }) as { data: Transaction[] | null; error: any };
-                if (txError) throw txError;
+                if (catsResult.error) throw catsResult.error;
+                if (txsResult.error) throw txsResult.error;
+                if (prevTxsResult.error) throw prevTxsResult.error;
+
+                const cats = catsResult.data as Category[];
+                const txs = txsResult.data as Transaction[];
+                const prevTxs = prevTxsResult.data as { amount: number }[];
+
+                setCategories(cats || []);
                 setTransactions(txs || []);
 
-                // 前月の支出合計
-                const { data: prevTxs, error: prevTxError } = await supabase
-                    .from('transactions')
-                    .select('amount')
-                    .eq('wallet_id', activeWallet?.id || '')
-                    .gte('date', prevStartPath)
-                    .lte('date', prevEndPath) as { data: { amount: number }[] | null; error: any };
-                if (prevTxError) throw prevTxError;
                 const prevTotal = (prevTxs || []).reduce((sum, tx) => sum + Number(tx.amount), 0);
                 setPrevMonthTotal(prevTotal);
 

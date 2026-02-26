@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { Camera, Image as ImageIcon, FolderOpen, X } from 'lucide-react';
+import imageCompression from 'browser-image-compression';
 
 export type OcrItem = {
     itemName?: string;
@@ -25,21 +26,57 @@ export default function ReceiptScanner({ onScanComplete, onCancel }: ReceiptScan
     const [images, setImages] = useState<File[]>([]);
     const [previews, setPreviews] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
+    const [compressing, setCompressing] = useState(false);
     const [progress, setProgress] = useState({ current: 0, total: 0 });
 
     const cameraInputRef = useRef<HTMLInputElement>(null);
     const albumInputRef = useRef<HTMLInputElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // ファイル選択ハンドラ（共通）
-    const handleFilesSelected = (files: FileList | null) => {
+    // 画像圧縮オプション
+    const compressionOptions = {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1600,
+        useWebWorker: true,
+        fileType: 'image/webp' as const,
+        initialQuality: 0.85,
+    };
+
+    // 画像圧縮処理
+    const compressImage = async (file: File): Promise<File> => {
+        // 既に1MB以下かつ小さい画像はスキップ
+        if (file.size <= 1024 * 1024) {
+            return file;
+        }
+        try {
+            const compressed = await imageCompression(file, compressionOptions);
+            console.log(
+                `圧縮: ${(file.size / 1024).toFixed(0)}KB → ${(compressed.size / 1024).toFixed(0)}KB (${((1 - compressed.size / file.size) * 100).toFixed(0)}%削減)`
+            );
+            return compressed;
+        } catch (err) {
+            console.warn('画像圧縮に失敗、元の画像を使用:', err);
+            return file;
+        }
+    };
+
+    // ファイル選択ハンドラ（共通・圧縮付き）
+    const handleFilesSelected = async (files: FileList | null) => {
         if (!files || files.length === 0) return;
 
-        const newFiles = Array.from(files);
-        const newPreviews = newFiles.map(file => URL.createObjectURL(file));
+        setCompressing(true);
+        try {
+            const rawFiles = Array.from(files);
+            const compressedFiles = await Promise.all(
+                rawFiles.map(file => compressImage(file))
+            );
+            const newPreviews = compressedFiles.map(file => URL.createObjectURL(file));
 
-        setImages(prev => [...prev, ...newFiles]);
-        setPreviews(prev => [...prev, ...newPreviews]);
+            setImages(prev => [...prev, ...compressedFiles]);
+            setPreviews(prev => [...prev, ...newPreviews]);
+        } finally {
+            setCompressing(false);
+        }
     };
 
     // 個別の画像を削除
@@ -131,7 +168,8 @@ export default function ReceiptScanner({ onScanComplete, onCancel }: ReceiptScan
                 <button
                     type="button"
                     onClick={() => cameraInputRef.current?.click()}
-                    className="flex flex-col items-center gap-2 p-4 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors"
+                    disabled={compressing || loading}
+                    className="flex flex-col items-center gap-2 p-4 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors disabled:opacity-50"
                 >
                     <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center">
                         <Camera size={20} className="text-white" />
@@ -151,7 +189,8 @@ export default function ReceiptScanner({ onScanComplete, onCancel }: ReceiptScan
                 <button
                     type="button"
                     onClick={() => albumInputRef.current?.click()}
-                    className="flex flex-col items-center gap-2 p-4 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 transition-colors"
+                    disabled={compressing || loading}
+                    className="flex flex-col items-center gap-2 p-4 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 transition-colors disabled:opacity-50"
                 >
                     <div className="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center">
                         <ImageIcon size={20} className="text-white" />
@@ -171,7 +210,8 @@ export default function ReceiptScanner({ onScanComplete, onCancel }: ReceiptScan
                 <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex flex-col items-center gap-2 p-4 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors"
+                    disabled={compressing || loading}
+                    className="flex flex-col items-center gap-2 p-4 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors disabled:opacity-50"
                 >
                     <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center">
                         <FolderOpen size={20} className="text-white" />
@@ -225,6 +265,18 @@ export default function ReceiptScanner({ onScanComplete, onCancel }: ReceiptScan
                 </div>
             )}
 
+            {/* 圧縮中表示 */}
+            {compressing && (
+                <div className="w-full mb-4">
+                    <div className="flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-green-600 border-t-transparent" />
+                        <p className="text-xs font-semibold text-green-600">
+                            画像を最適化中...
+                        </p>
+                    </div>
+                </div>
+            )}
+
             {/* 進捗表示 */}
             {loading && (
                 <div className="w-full mb-4">
@@ -259,7 +311,7 @@ export default function ReceiptScanner({ onScanComplete, onCancel }: ReceiptScan
                 </button>
                 <button
                     onClick={handleScan}
-                    disabled={images.length === 0 || loading}
+                    disabled={images.length === 0 || loading || compressing}
                     className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-semibold disabled:bg-gray-300 disabled:shadow-none shadow-md transition-colors"
                 >
                     {loading

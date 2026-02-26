@@ -72,24 +72,29 @@ export async function POST() {
             }
         }
 
-        // カテゴリが存在するか確認し、無ければ作成
+        // カテゴリを作成（重複時はスキップ）
+        // wallet_id + name の組み合わせで重複を判定
+        const categories = DEFAULT_CATEGORIES.map(c => ({
+            ...c,
+            wallet_id: walletId,
+            user_id: user.id,
+        }));
+
+        // 既存カテゴリを確認し、未登録のもののみ追加
         const { data: existingCats } = await admin
             .from('categories')
-            .select('id')
-            .eq('wallet_id', walletId)
-            .limit(1);
+            .select('name')
+            .eq('wallet_id', walletId);
 
-        if (!existingCats || existingCats.length === 0) {
-            const categories = DEFAULT_CATEGORIES.map(c => ({
-                ...c,
-                wallet_id: walletId,
-                user_id: user.id,
-            }));
-            const { error: catError } = await admin.from('categories').insert(categories);
+        const existingNames = new Set((existingCats || []).map((c: any) => c.name));
+        const newCategories = categories.filter(c => !existingNames.has(c.name));
+
+        if (newCategories.length > 0) {
+            const { error: catError } = await admin.from('categories').insert(newCategories);
             if (catError) {
                 console.error('Category creation error:', catError);
                 // type/user_id カラムが無い場合のフォールバック（最小限のカラムで再試行）
-                const minCategories = DEFAULT_CATEGORIES.map(c => ({
+                const minCategories = newCategories.map(c => ({
                     name: c.name,
                     color: c.color,
                     wallet_id: walletId,

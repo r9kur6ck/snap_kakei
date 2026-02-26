@@ -23,15 +23,8 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // 初期セッション取得
-        const getSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            setUser(session?.user ?? null);
-            setIsLoading(false);
-        };
-        getSession();
-
-        // Auth状態の変化を監視
+        // onAuthStateChange は INITIAL_SESSION イベントも発火するため
+        // getSession() の明示的呼び出しは不要（二重セット防止）
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             (_event, session) => {
                 setUser(session?.user ?? null);

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -32,6 +32,7 @@ export default function WalletProvider({ children }: { children: React.ReactNode
     const [wallets, setWallets] = useState<Wallet[]>([]);
     const [activeWalletId, setActiveWalletIdState] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const initializedUserIdRef = useRef<string | null>(null);
 
     // ウォレット一覧の取得
     useEffect(() => {
@@ -39,15 +40,22 @@ export default function WalletProvider({ children }: { children: React.ReactNode
             setWallets([]);
             setActiveWalletIdState(null);
             setIsLoading(false);
+            initializedUserIdRef.current = null;
             return;
         }
 
+        // 同じユーザーで既に初期化済みならスキップ
+        if (initializedUserIdRef.current === user.id) {
+            return;
+        }
+        initializedUserIdRef.current = user.id;
+
         const fetchWallets = async () => {
             try {
-                // サーバーAPIでウォレット＆カテゴリの初期化＋データ取得（RLSバイパス）
                 const initRes = await fetch('/api/init-wallet', { method: 'POST' });
                 if (!initRes.ok) {
                     console.error('Wallet init failed');
+                    initializedUserIdRef.current = null; // 失敗時はリトライ可能に
                     setIsLoading(false);
                     return;
                 }
@@ -61,7 +69,6 @@ export default function WalletProvider({ children }: { children: React.ReactNode
                 const fetchedWallets = [wallet] as Wallet[];
                 setWallets(fetchedWallets);
 
-                // activeWalletIdの復元（localStorageから）
                 const saved = localStorage.getItem(`snap_kakei_active_wallet_${user.id}`);
                 if (saved && fetchedWallets.some(w => w.id === saved)) {
                     setActiveWalletIdState(saved);
@@ -70,6 +77,7 @@ export default function WalletProvider({ children }: { children: React.ReactNode
                 }
             } catch (err) {
                 console.error('Failed to fetch wallets:', err);
+                initializedUserIdRef.current = null; // 失敗時はリトライ可能に
             } finally {
                 setIsLoading(false);
             }

@@ -128,8 +128,6 @@ export default function InputPage() {
 
                     // スキャンページからの結果があれば反映（複数レシート対応）
                     const scanResultsStr = localStorage.getItem('scan_results');
-                    // 旧形式(scan_result)も後方互換として対応
-                    const legacyStr = localStorage.getItem('scan_result');
                     if (scanResultsStr) {
                         localStorage.removeItem('scan_results');
                         try {
@@ -185,39 +183,6 @@ export default function InputPage() {
                                 allItems = [...allItems, ...receiptItems];
                             });
                             if (allItems.length > 0) setItems(allItems);
-                        } catch { /* ignore parse error */ }
-                    } else if (legacyStr) {
-                        // 旧形式の単一結果を配列として処理
-                        localStorage.removeItem('scan_result');
-                        try {
-                            const scanResult: OcrResult = JSON.parse(legacyStr);
-                            if (scanResult.date) setDate(scanResult.date);
-                            if (scanResult.storeName) setStoreName(scanResult.storeName);
-                            if (scanResult.items && scanResult.items.length > 0) {
-                                const newItems = scanResult.items.map((item, index) => {
-                                    let matchedCategoryId = data[0].id;
-                                    if (item.categoryName) {
-                                        const found = data.find(c => c.name.includes(item.categoryName!));
-                                        if (found) matchedCategoryId = found.id;
-                                    }
-                                    return {
-                                        id: (Date.now() + index).toString(),
-                                        amount: item.amount?.toString() || '',
-                                        itemName: item.itemName || '',
-                                        categoryId: matchedCategoryId,
-                                        memo: '',
-                                    };
-                                });
-                                setItems(newItems);
-                            } else {
-                                setItems([{
-                                    id: Date.now().toString(),
-                                    amount: scanResult.totalAmount?.toString() || '',
-                                    itemName: 'スキャン結果',
-                                    categoryId: data[0].id,
-                                    memo: '',
-                                }]);
-                            }
                         } catch { /* ignore parse error */ }
                     } else {
                         // 初期表示で空の1行を作成
