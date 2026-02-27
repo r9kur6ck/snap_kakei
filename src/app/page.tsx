@@ -36,7 +36,8 @@ export default function Home() {
           supabase
             .from('categories')
             .select('id, name, color')
-            .eq('wallet_id', activeWallet.id),
+            .eq('wallet_id', activeWallet.id)
+            .eq('target_type', 'transaction'),
           supabase
             .from('transactions')
             .select('amount, category_id')

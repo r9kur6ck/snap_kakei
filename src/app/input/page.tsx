@@ -118,6 +118,7 @@ export default function InputPage() {
                     .from('categories')
                     .select('id, name')
                     .eq('wallet_id', activeWallet?.id || '')
+                    .eq('target_type', 'transaction')
                     .order('created_at') as { data: { id: string; name: string }[] | null, error: any };
 
                 if (error) throw error;

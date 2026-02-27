@@ -68,7 +68,8 @@ export default function SettingsPage() {
                 const { data: cats } = await supabase
                     .from('categories')
                     .select('id, name, color')
-                    .eq('wallet_id', activeWallet?.id || '') as { data: Category[] | null; error: any };
+                    .eq('wallet_id', activeWallet?.id || '')
+                    .eq('target_type', 'fixed_cost') as { data: Category[] | null; error: any };
                 setCategories(cats || []);
                 if (cats && cats.length > 0) {
                     setNewCategoryId(cats[0].id);

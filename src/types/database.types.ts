@@ -35,6 +35,7 @@ export interface Database {
                     user_id: string
                     name: string
                     type: 'expense' | 'income'
+                    target_type: 'transaction' | 'fixed_cost'
                     icon: string | null
                     color: string | null
                     created_at: string
@@ -44,6 +45,7 @@ export interface Database {
                     user_id: string
                     name: string
                     type?: 'expense' | 'income'
+                    target_type?: 'transaction' | 'fixed_cost'
                     icon?: string | null
                     color?: string | null
                     created_at?: string
@@ -53,6 +55,7 @@ export interface Database {
                     user_id?: string
                     name?: string
                     type?: 'expense' | 'income'
+                    target_type?: 'transaction' | 'fixed_cost'
                     icon?: string | null
                     color?: string | null
                     created_at?: string

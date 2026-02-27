@@ -204,16 +204,24 @@ BEGIN
     INSERT INTO public.wallet_members (wallet_id, user_id, role)
     VALUES (new_wallet_id, NEW.id, 'owner');
 
-    -- デフォルトカテゴリを作成
-    INSERT INTO public.categories (wallet_id, user_id, name, type, color) VALUES
-        (new_wallet_id, NEW.id, '食費', 'expense', '#ef4444'),
-        (new_wallet_id, NEW.id, '日用品', 'expense', '#f59e0b'),
-        (new_wallet_id, NEW.id, '交通費', 'expense', '#3b82f6'),
-        (new_wallet_id, NEW.id, '交際費', 'expense', '#8b5cf6'),
-        (new_wallet_id, NEW.id, '衣服', 'expense', '#ec4899'),
-        (new_wallet_id, NEW.id, '医療費', 'expense', '#10b981'),
-        (new_wallet_id, NEW.id, '特別費', 'expense', '#6366f1'),
-        (new_wallet_id, NEW.id, '趣味', 'expense', '#14b8a6');
+    -- デフォルトカテゴリを作成（変動費用）
+    INSERT INTO public.categories (wallet_id, user_id, name, type, color, target_type) VALUES
+        (new_wallet_id, NEW.id, '食費', 'expense', '#ef4444', 'transaction'),
+        (new_wallet_id, NEW.id, '日用品', 'expense', '#f59e0b', 'transaction'),
+        (new_wallet_id, NEW.id, '交通費', 'expense', '#3b82f6', 'transaction'),
+        (new_wallet_id, NEW.id, '交際費', 'expense', '#8b5cf6', 'transaction'),
+        (new_wallet_id, NEW.id, '衣服', 'expense', '#ec4899', 'transaction'),
+        (new_wallet_id, NEW.id, '医療費', 'expense', '#10b981', 'transaction'),
+        (new_wallet_id, NEW.id, '特別費', 'expense', '#6366f1', 'transaction'),
+        (new_wallet_id, NEW.id, '趣味', 'expense', '#14b8a6', 'transaction');
+
+    -- デフォルトカテゴリを作成（固定費用）
+    INSERT INTO public.categories (wallet_id, user_id, name, type, color, target_type) VALUES
+        (new_wallet_id, NEW.id, '住居費', 'expense', '#78716c', 'fixed_cost'),
+        (new_wallet_id, NEW.id, '光熱費', 'expense', '#f97316', 'fixed_cost'),
+        (new_wallet_id, NEW.id, '通信費', 'expense', '#0ea5e9', 'fixed_cost'),
+        (new_wallet_id, NEW.id, '保険料', 'expense', '#22c55e', 'fixed_cost'),
+        (new_wallet_id, NEW.id, 'サブスク', 'expense', '#a855f7', 'fixed_cost');
 
     RETURN NEW;
 EXCEPTION
