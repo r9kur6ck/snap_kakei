@@ -48,6 +48,7 @@ export default function SettingsPage() {
 
     // 予算設定
     const [monthlyBudget, setMonthlyBudget] = useState('150000');
+    const [billingStartDate, setBillingStartDate] = useState('1');
     const [budgetSaved, setBudgetSaved] = useState(false);
 
     // 固定費編集用
@@ -94,6 +95,7 @@ export default function SettingsPage() {
     useEffect(() => {
         if (activeWallet) {
             setMonthlyBudget(String(activeWallet.monthly_budget || 150000));
+            setBillingStartDate(String(activeWallet.billing_start_date || 1));
         }
     }, [activeWallet]);
 
@@ -102,7 +104,7 @@ export default function SettingsPage() {
         if (!activeWallet) return;
         try {
             const { error } = await (supabase.from('wallets') as any)
-                .update({ monthly_budget: Number(monthlyBudget) })
+                .update({ monthly_budget: Number(monthlyBudget), billing_start_date: Number(billingStartDate) })
                 .eq('id', activeWallet.id);
             if (error) throw error;
             await refreshWallet();
@@ -480,17 +482,31 @@ export default function SettingsPage() {
                             className="w-full px-2 py-2.5 text-sm bg-transparent outline-none font-bold"
                         />
                     </div>
-                    <button
-                        onClick={handleSaveBudget}
-                        className={`px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${budgetSaved
-                            ? 'bg-green-100 text-green-600'
-                            : 'bg-blue-600 text-white hover:bg-blue-700'
-                            }`}
-                    >
-                        {budgetSaved ? '✓ 保存済' : '保存'}
-                    </button>
                 </div>
-                <p className="text-[10px] text-gray-400 mt-2">ホーム画面の予算計算に使用されます</p>
+
+                <div className="mt-4">
+                    <label className="text-xs font-semibold text-gray-600 mb-1.5 block">📅 集計開始日</label>
+                    <select
+                        value={billingStartDate}
+                        onChange={e => setBillingStartDate(e.target.value)}
+                        className="w-full bg-gray-50 rounded-lg px-3 py-2.5 text-sm outline-none border border-gray-200 appearance-none cursor-pointer font-bold"
+                    >
+                        {Array.from({ length: 28 }, (_, i) => (
+                            <option key={i + 1} value={i + 1}>毎月 {i + 1}日 から集計</option>
+                        ))}
+                    </select>
+                    <p className="text-[10px] text-gray-400 mt-1.5">給料日などに合わせて集計期間の開始日を設定できます（1日＝従来通り月初〜月末）</p>
+                </div>
+
+                <button
+                    onClick={handleSaveBudget}
+                    className={`w-full mt-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${budgetSaved
+                        ? 'bg-green-100 text-green-600'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                        }`}
+                >
+                    {budgetSaved ? '✓ 保存済' : '設定を保存'}
+                </button>
             </section>
 
             {/* CSVエクスポート */}

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { format, startOfMonth, endOfMonth, subMonths, addMonths, getDaysInMonth, differenceInDays } from 'date-fns';
+import { format, getDaysInMonth, differenceInDays, addMonths, subMonths } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Receipt, TrendingUp, TrendingDown, CalendarDays, Wallet, Trophy, ArrowUpRight, ArrowDownRight, Pencil, Trash2, Check, Home, CreditCard } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
@@ -9,6 +9,7 @@ import CategoryPieChart from '@/components/charts/CategoryPieChart';
 import DailyBarChart from '@/components/charts/DailyBarChart';
 import MonthlyLineChart from '@/components/charts/MonthlyLineChart';
 import { useWallet } from '@/components/WalletProvider';
+import { getBillingPeriod, getBillingPeriodLabel } from '@/utils/dateUtils';
 
 interface Transaction {
     id: string;
@@ -58,23 +59,33 @@ export default function AnalyticsPage() {
     const [confirmDeleteTxId, setConfirmDeleteTxId] = useState<string | null>(null);
     const [activeSection, setActiveSection] = useState<'variable' | 'fixed'>('variable');
 
-    const monthStr = format(currentMonth, 'yyyy年 M月', { locale: ja });
+    const billingStartDay = activeWallet?.billing_start_date || 1;
+    const period = getBillingPeriod(currentMonth, billingStartDay);
+    const monthStr = billingStartDay === 1
+        ? format(currentMonth, 'yyyy年 M月', { locale: ja })
+        : getBillingPeriodLabel(period.start, period.end);
 
-    const handlePrevMonth = () => setCurrentMonth(prev => subMonths(prev, 1));
-    const handleNextMonth = () => setCurrentMonth(prev => addMonths(prev, 1));
+    const handlePrevMonth = () => setCurrentMonth(prev => {
+        const p = getBillingPeriod(prev, billingStartDay);
+        return subMonths(p.start, 1);
+    });
+    const handleNextMonth = () => setCurrentMonth(prev => {
+        const p = getBillingPeriod(prev, billingStartDay);
+        return addMonths(p.start, 1);
+    });
 
     useEffect(() => {
         if (!activeWallet) return;
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                const startPath = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
-                const endPath = format(endOfMonth(currentMonth), 'yyyy-MM-dd');
+                const startPath = period.startPath;
+                const endPath = period.endPath;
 
-                // 前月のデータも取得（比較用）
-                const prevMonth = subMonths(currentMonth, 1);
-                const prevStartPath = format(startOfMonth(prevMonth), 'yyyy-MM-dd');
-                const prevEndPath = format(endOfMonth(prevMonth), 'yyyy-MM-dd');
+                // 前期間のデータも取得（比較用）
+                const prevPeriod = getBillingPeriod(subMonths(period.start, 1), billingStartDay);
+                const prevStartPath = prevPeriod.startPath;
+                const prevEndPath = prevPeriod.endPath;
 
                 // 5つのクエリを並列実行
                 const [catsResult, fixedCatsResult, txsResult, prevTxsResult, fcResult] = await Promise.all([
@@ -185,15 +196,14 @@ export default function AnalyticsPage() {
             const monthlyFixedTotal = (fcs || []).reduce((sum, fc) => sum + Number(fc.amount), 0);
 
             const promises = Array.from({ length: 12 }, async (_, i) => {
-                const m = new Date(year, i, 1);
-                const s = format(startOfMonth(m), 'yyyy-MM-dd');
-                const e = format(endOfMonth(m), 'yyyy-MM-dd');
+                const m = new Date(year, i, billingStartDay > 1 ? billingStartDay : 1);
+                const mp = getBillingPeriod(m, billingStartDay);
                 const { data } = await supabase
                     .from('transactions')
                     .select('amount')
                     .eq('wallet_id', activeWallet?.id || '')
-                    .gte('date', s)
-                    .lte('date', e) as { data: { amount: number }[] | null };
+                    .gte('date', mp.startPath)
+                    .lte('date', mp.endPath) as { data: { amount: number }[] | null };
                 const variableTotal = (data || []).reduce((sum, tx) => sum + Number(tx.amount), 0);
                 return {
                     month: `${i + 1}月`,
@@ -204,7 +214,7 @@ export default function AnalyticsPage() {
             setYearlyData(results);
         };
         fetchYearly();
-    }, [viewMode, currentMonth, activeWallet]);
+    }, [viewMode, currentMonth, activeWallet, billingStartDay]);
 
     // 取引の削除
     const handleDeleteTx = async (id: string) => {
@@ -297,13 +307,13 @@ export default function AnalyticsPage() {
         ? Math.round((monthDiff / prevMonthTotal) * 100)
         : (displayTotal > 0 ? 100 : 0);
 
-    // 今月の残り日数と予測
+    // 今の期間の残り日数と予測
     const today = new Date();
-    const isCurrentMonth = format(currentMonth, 'yyyy-MM') === format(today, 'yyyy-MM');
-    const daysElapsed = isCurrentMonth ? today.getDate() : getDaysInMonth(currentMonth);
-    const daysInMonth = getDaysInMonth(currentMonth);
-    const projectedSpend = isCurrentMonth && daysElapsed > 0
-        ? Math.round((displayTotal / daysElapsed) * daysInMonth)
+    const isCurrentPeriod = today >= period.start && today <= period.end;
+    const daysElapsed = isCurrentPeriod ? differenceInDays(today, period.start) + 1 : differenceInDays(period.end, period.start) + 1;
+    const daysInPeriod = differenceInDays(period.end, period.start) + 1;
+    const projectedSpend = isCurrentPeriod && daysElapsed > 0
+        ? Math.round((displayTotal / daysElapsed) * daysInPeriod)
         : displayTotal;
 
     // 選択中のカテゴリ名取得
@@ -509,7 +519,7 @@ export default function AnalyticsPage() {
                                     <p className="text-[10px] text-gray-400">¥{highestDay.amount.toLocaleString()}</p>
                                 </div>
                                 <div className="bg-white rounded-2xl p-3 shadow-[0_4px_15px_rgb(0,0,0,0.03)] border border-gray-100 text-center">
-                                    {isCurrentMonth ? (
+                                    {isCurrentPeriod ? (
                                         <>
                                             <TrendingUp size={18} className="mx-auto text-amber-500 mb-1" />
                                             <p className="text-[10px] text-gray-400 font-medium">月末予測</p>

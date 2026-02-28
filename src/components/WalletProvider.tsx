@@ -9,6 +9,7 @@ interface Wallet {
     name: string;
     owner_id: string;
     monthly_budget: number;
+    billing_start_date: number;
 }
 
 interface WalletContextType {
@@ -101,7 +102,7 @@ export default function WalletProvider({ children }: { children: React.ReactNode
         try {
             const { data, error } = await (supabase
                 .from('wallets')
-                .select('id, name, owner_id, monthly_budget')
+                .select('id, name, owner_id, monthly_budget, billing_start_date')
                 .eq('id', activeWalletId)
                 .single() as any);
             if (error) throw error;

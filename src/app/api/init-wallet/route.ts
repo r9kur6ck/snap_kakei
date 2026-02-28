@@ -116,7 +116,7 @@ export async function POST() {
         // ウォレットの完全なデータを返す
         const { data: walletData } = await admin
             .from('wallets')
-            .select('id, name, owner_id, monthly_budget')
+            .select('id, name, owner_id, monthly_budget, billing_start_date')
             .eq('id', walletId)
             .single();
 

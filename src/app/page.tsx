@@ -3,18 +3,23 @@
 import React, { useEffect, useState } from 'react';
 import CategoryPieChart from "@/components/charts/CategoryPieChart";
 import ProgressBar from "@/components/ui/ProgressBar";
-import { format, startOfMonth, endOfMonth } from "date-fns";
-import { ja } from "date-fns/locale";
+import { format } from "date-fns";
 import { supabase } from '@/lib/supabase/client';
 import { Bell, LogOut } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { useWallet } from '@/components/WalletProvider';
+import { getBillingPeriod, getBillingPeriodLabel } from '@/utils/dateUtils';
 
 export default function Home() {
   const currentDate = new Date();
-  const currentMonthStr = format(currentDate, 'yyyy年 M月', { locale: ja });
   const { user, signOut } = useAuth();
   const { activeWallet } = useWallet();
+
+  const billingStartDay = activeWallet?.billing_start_date || 1;
+  const period = getBillingPeriod(currentDate, billingStartDay);
+  const periodLabel = billingStartDay === 1
+    ? format(currentDate, 'yyyy年 M月')
+    : getBillingPeriodLabel(period.start, period.end);
 
   const monthlyBudget = activeWallet?.monthly_budget || 150000;
   const [currentSpend, setCurrentSpend] = useState(0);
@@ -28,8 +33,8 @@ export default function Home() {
 
     const fetchDashboardData = async () => {
       try {
-        const startPath = format(startOfMonth(currentDate), 'yyyy-MM-dd');
-        const endPath = format(endOfMonth(currentDate), 'yyyy-MM-dd');
+        const startPath = period.startPath;
+        const endPath = period.endPath;
 
         // 3つのクエリを並列実行
         const [catsResult, txsResult, fcResult] = await Promise.all([
@@ -83,10 +88,28 @@ export default function Home() {
         const fcTotal = (fixedCosts || []).reduce((sum, fc) => sum + Number(fc.amount), 0);
         setFixedCostTotal(fcTotal);
 
-        // 今月の残りの固定費（引落予定）を計算
-        const today = new Date().getDate();
+        // 期間内の残りの固定費（引落予定）を計算
+        const today = new Date();
         const upcoming = (fixedCosts || [])
-          .filter((fc: any) => fc.date_of_month >= today)
+          .filter((fc: any) => {
+            // 期間内の各月でこの支払日を確認
+            const months: Date[] = [];
+            let cursor = new Date(period.start.getFullYear(), period.start.getMonth(), 1);
+            const endCursor = new Date(period.end.getFullYear(), period.end.getMonth(), 1);
+            while (cursor <= endCursor) {
+              months.push(new Date(cursor));
+              cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+            }
+            for (const m of months) {
+              const daysInMonth = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
+              const actualDay = Math.min(fc.date_of_month, daysInMonth);
+              const paymentDate = new Date(m.getFullYear(), m.getMonth(), actualDay);
+              if (paymentDate >= period.start && paymentDate <= period.end && paymentDate >= today) {
+                return true;
+              }
+            }
+            return false;
+          })
           .sort((a: any, b: any) => a.date_of_month - b.date_of_month)
           .slice(0, 3)
           .map((fc: any) => ({ name: fc.name, amount: fc.amount, date_of_month: fc.date_of_month }));
@@ -121,7 +144,7 @@ export default function Home() {
           <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-indigo-600">
             Snap Kakei
           </h1>
-          <p className="text-sm text-gray-500 font-medium">{currentMonthStr}の家計簿</p>
+          <p className="text-sm text-gray-500 font-medium">{periodLabel} の家計簿</p>
         </div>
         <button
           onClick={signOut}
@@ -185,7 +208,7 @@ export default function Home() {
         <section className="bg-white rounded-2xl p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100">
           <h2 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-1.5">
             <Bell size={14} className="text-amber-500" />
-            今月の引落し予定
+            引落し予定
           </h2>
           <div className="flex flex-col gap-2">
             {upcomingFixedCosts.map((fc, i) => (
