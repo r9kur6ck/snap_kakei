@@ -15,7 +15,7 @@ export default function WelcomePage() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-6 overflow-hidden relative">
+        <div className="min-h-screen bg-blue-50 flex items-center justify-center p-6 overflow-hidden relative">
             {/* 背景の装飾パーティクル */}
             <div className="absolute inset-0 pointer-events-none">
                 {['🎉', '✨', '🎊', '⭐', '💫', '🌟', '🎉', '✨', '🎊', '⭐'].map((emoji, i) => (
@@ -37,14 +37,14 @@ export default function WelcomePage() {
 
             <div
                 className={`w-full max-w-sm text-center transition-all duration-700 ease-out ${showContent
-                        ? 'opacity-100 translate-y-0 scale-100'
-                        : 'opacity-0 translate-y-8 scale-95'
+                    ? 'opacity-100 translate-y-0 scale-100'
+                    : 'opacity-0 translate-y-8 scale-95'
                     }`}
             >
                 {/* アイコン */}
                 <div className="relative mx-auto mb-6 w-24 h-24">
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-3xl rotate-6 opacity-20" />
-                    <div className="relative w-24 h-24 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-3xl flex items-center justify-center shadow-xl shadow-blue-200">
+                    <div className="absolute inset-0 bg-blue-400 rounded-3xl rotate-6 opacity-20" />
+                    <div className="relative w-24 h-24 bg-blue-600 rounded-3xl flex items-center justify-center shadow-xl shadow-blue-200">
                         <span className="text-5xl">🎉</span>
                     </div>
                     <div className="absolute -top-2 -right-2 w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center shadow-lg animate-pulse">
@@ -53,7 +53,7 @@ export default function WelcomePage() {
                 </div>
 
                 {/* メッセージ */}
-                <h1 className="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-indigo-600 mb-2">
+                <h1 className="text-2xl font-extrabold text-blue-600 mb-2">
                     Snap Kakeiへようこそ！
                 </h1>
                 <p className="text-gray-600 text-sm mb-2">
@@ -78,7 +78,7 @@ export default function WelcomePage() {
 
                     <button
                         onClick={() => router.push('/')}
-                        className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-blue-200 hover:from-blue-700 hover:to-indigo-700 transition-all flex items-center justify-center gap-2 group"
+                        className="w-full py-3.5 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 group"
                     >
                         家計簿を使い始める
                         <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />

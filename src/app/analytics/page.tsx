@@ -59,6 +59,14 @@ export default function AnalyticsPage() {
     const [confirmDeleteTxId, setConfirmDeleteTxId] = useState<string | null>(null);
     const [activeSection, setActiveSection] = useState<'variable' | 'fixed'>('variable');
 
+    // 固定費の編集用ステート
+    const [editingFixedCostId, setEditingFixedCostId] = useState<string | null>(null);
+    const [editFixedCostName, setEditFixedCostName] = useState('');
+    const [editFixedCostAmount, setEditFixedCostAmount] = useState('');
+    const [editFixedCostDate, setEditFixedCostDate] = useState('1');
+    const [editFixedCostCategory, setEditFixedCostCategory] = useState('');
+    const [confirmDeleteFixedCostId, setConfirmDeleteFixedCostId] = useState<string | null>(null);
+
     const billingStartDay = activeWallet?.billing_start_date || 1;
     const period = getBillingPeriod(currentMonth, billingStartDay);
     const monthStr = billingStartDay === 1
@@ -254,6 +262,59 @@ export default function AnalyticsPage() {
         setEditingTx(null);
     };
 
+    // ======== 固定費の編集・削除 ========
+    const handleDeleteFixedCost = async (id: string) => {
+        try {
+            const { error } = await supabase.from('fixed_costs').delete().eq('id', id);
+            if (error) throw error;
+            setFixedCosts(prev => prev.filter(fc => fc.id !== id));
+            setConfirmDeleteFixedCostId(null);
+        } catch (err: any) {
+            console.error('Delete fixed cost failed:', err?.message);
+            alert(`削除に失敗: ${err?.message || '不明なエラー'}`);
+        }
+    };
+
+    const handleEditFixedCost = (fc: FixedCost) => {
+        setEditingFixedCostId(fc.id);
+        setEditFixedCostName(fc.name);
+        setEditFixedCostAmount(String(fc.amount));
+        setEditFixedCostDate(String(fc.date_of_month));
+        setEditFixedCostCategory(fc.category_id || '');
+    };
+
+    const handleSaveFixedCostEdit = async (id: string) => {
+        try {
+            const dateNum = Number(editFixedCostDate);
+            if (dateNum < 1 || dateNum > 31) {
+                alert('日付は1〜31の範囲で入力してください。');
+                return;
+            }
+            const { error } = await (supabase
+                .from('fixed_costs') as any)
+                .update({
+                    name: editFixedCostName,
+                    amount: Number(editFixedCostAmount),
+                    date_of_month: dateNum,
+                    category_id: editFixedCostCategory || null,
+                })
+                .eq('id', id);
+            if (error) throw error;
+            setFixedCosts(prev => prev.map(fc =>
+                fc.id === id ? {
+                    ...fc,
+                    name: editFixedCostName,
+                    amount: Number(editFixedCostAmount),
+                    date_of_month: dateNum,
+                    category_id: editFixedCostCategory || null
+                } : fc
+            ));
+            setEditingFixedCostId(null);
+        } catch (err: any) {
+            alert(`編集に失敗しました: ${err?.message || '不明なエラー'}`);
+        }
+    };
+
     // ======== カテゴリ絞り込み ========
     const filteredTransactions = useMemo(() => {
         if (!selectedCategoryId) return transactions;
@@ -394,7 +455,7 @@ export default function AnalyticsPage() {
                     {/* ============================================================ */}
                     {/* 総支出サマリー（変動費＋固定費）— 最上部に大きく表示 */}
                     {/* ============================================================ */}
-                    <section className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-5 text-white shadow-lg">
+                    <section className="bg-blue-600 rounded-2xl p-5 text-white shadow-lg">
                         <p className="text-xs font-semibold opacity-70">📊 総支出（変動費＋固定費）</p>
                         <p className="text-3xl font-extrabold mt-1">¥{grandTotal.toLocaleString()}</p>
                         <div className="flex gap-6 mt-3">
@@ -441,7 +502,7 @@ export default function AnalyticsPage() {
                     {activeSection === 'variable' ? (
                         <>
                             {/* 変動費の合計金額 + 前月比 */}
-                            <section className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-5 text-white shadow-lg">
+                            <section className="bg-blue-500 rounded-2xl p-5 text-white shadow-lg">
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <p className="text-xs font-semibold opacity-80">
@@ -680,31 +741,31 @@ export default function AnalyticsPage() {
                                                                 </p>
                                                             </div>
                                                         </div>
-                                                        <div className="flex items-center gap-1.5">
+                                                        <div className="flex items-center gap-1.5 shrink-0">
                                                             <span className="text-sm font-bold text-gray-800">
                                                                 ¥{Number(tx.amount).toLocaleString()}
                                                             </span>
                                                             <button
                                                                 onClick={() => handleEditTx(tx)}
-                                                                className="text-gray-400 hover:text-blue-500 transition-colors"
+                                                                className="text-gray-400 hover:text-blue-500 transition-colors ml-1"
                                                             >
                                                                 <Pencil size={12} />
                                                             </button>
                                                             {confirmDeleteTxId === tx.id ? (
-                                                                <>
+                                                                <div className="flex items-center gap-1">
                                                                     <button
                                                                         onClick={() => handleDeleteTx(tx.id)}
-                                                                        className="px-2 py-0.5 rounded bg-red-500 text-white text-[10px] font-bold hover:bg-red-600"
+                                                                        className="px-2 py-1 rounded bg-red-500 text-white text-[10px] font-bold hover:bg-red-600 whitespace-nowrap"
                                                                     >
                                                                         削除
                                                                     </button>
                                                                     <button
                                                                         onClick={() => setConfirmDeleteTxId(null)}
-                                                                        className="px-2 py-0.5 rounded bg-gray-200 text-gray-600 text-[10px] font-bold hover:bg-gray-300"
+                                                                        className="px-2 py-1 rounded bg-gray-200 text-gray-600 text-[10px] font-bold hover:bg-gray-300 whitespace-nowrap"
                                                                     >
-                                                                        やめる
+                                                                        キャンセル
                                                                     </button>
-                                                                </>
+                                                                </div>
                                                             ) : (
                                                                 <button
                                                                     onClick={() => setConfirmDeleteTxId(tx.id)}
@@ -728,7 +789,7 @@ export default function AnalyticsPage() {
                         /* ============================================================ */
                         <>
                             {/* 固定費の合計 */}
-                            <section className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-5 text-white shadow-lg">
+                            <section className="bg-emerald-500 rounded-2xl p-5 text-white shadow-lg">
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <p className="text-xs font-semibold opacity-80">固定費 合計（毎月）</p>
@@ -788,23 +849,108 @@ export default function AnalyticsPage() {
                                         {fixedCosts.map(fc => (
                                             <div
                                                 key={fc.id}
-                                                className="flex items-center justify-between p-3 rounded-xl bg-gray-50"
+                                                className={`rounded-xl transition-colors group ${editingFixedCostId === fc.id ? 'bg-emerald-50 border border-emerald-200 p-3' : 'bg-gray-50 hover:bg-gray-100 p-3'}`}
                                             >
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <div
-                                                        className="w-2 h-8 rounded-full flex-shrink-0"
-                                                        style={{ backgroundColor: getCategoryColor(fc.category_id) }}
-                                                    />
-                                                    <div className="min-w-0">
-                                                        <p className="text-sm font-semibold text-gray-800 truncate">{fc.name}</p>
-                                                        <p className="text-[10px] text-gray-400">
-                                                            毎月{fc.date_of_month}日 · {getCategoryName(fc.category_id)}
-                                                        </p>
+                                                {editingFixedCostId === fc.id ? (
+                                                    <div className="flex flex-col gap-2">
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <input
+                                                                type="text"
+                                                                value={editFixedCostName}
+                                                                onChange={e => setEditFixedCostName(e.target.value)}
+                                                                placeholder="固定費名"
+                                                                className="bg-white rounded-lg px-2 py-1.5 text-sm border border-emerald-200 outline-none"
+                                                                autoFocus
+                                                            />
+                                                            <div className="flex items-center bg-white rounded-lg border border-emerald-200">
+                                                                <span className="pl-2 text-gray-400 text-xs">¥</span>
+                                                                <input
+                                                                    type="number"
+                                                                    value={editFixedCostAmount}
+                                                                    onChange={e => setEditFixedCostAmount(e.target.value)}
+                                                                    className="w-full px-1 py-1.5 text-sm bg-transparent outline-none"
+                                                                    placeholder="0"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <div className="flex items-center bg-white rounded-lg border border-emerald-200">
+                                                                <span className="pl-2 text-gray-400 text-xs">毎月</span>
+                                                                <input
+                                                                    type="number"
+                                                                    min="1"
+                                                                    max="31"
+                                                                    value={editFixedCostDate}
+                                                                    onChange={e => setEditFixedCostDate(e.target.value)}
+                                                                    className="w-full px-1 py-1.5 text-sm bg-transparent outline-none text-right"
+                                                                />
+                                                                <span className="pr-2 text-gray-400 text-xs text-right">日</span>
+                                                            </div>
+                                                            <select
+                                                                value={editFixedCostCategory}
+                                                                onChange={e => setEditFixedCostCategory(e.target.value)}
+                                                                className="w-full bg-white rounded-lg px-2 py-1.5 text-sm border border-emerald-200 outline-none appearance-none"
+                                                            >
+                                                                {fixedCostCategories.map(cat => (
+                                                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+                                                        <div className="flex gap-2 items-center justify-end mt-1">
+                                                            <button onClick={() => handleSaveFixedCostEdit(fc.id)} className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 whitespace-nowrap"><Check size={12} className="inline mr-0.5" />保存</button>
+                                                            <button onClick={() => setEditingFixedCostId(null)} className="px-3 py-1.5 rounded-lg bg-gray-200 text-gray-600 text-xs font-semibold hover:bg-gray-300 whitespace-nowrap">×</button>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                                <span className="text-sm font-bold text-gray-800">
-                                                    ¥{Number(fc.amount).toLocaleString()}
-                                                </span>
+                                                ) : (
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-3 min-w-0">
+                                                            <div
+                                                                className="w-2 h-8 rounded-full flex-shrink-0"
+                                                                style={{ backgroundColor: getCategoryColor(fc.category_id) }}
+                                                            />
+                                                            <div className="min-w-0">
+                                                                <p className="text-sm font-semibold text-gray-800 truncate">{fc.name}</p>
+                                                                <p className="text-[10px] text-gray-400">
+                                                                    毎月{fc.date_of_month}日 · {getCategoryName(fc.category_id)}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-1.5 shrink-0 pl-2">
+                                                            <span className="text-sm font-bold text-gray-800 whitespace-nowrap">
+                                                                ¥{Number(fc.amount).toLocaleString()}
+                                                            </span>
+                                                            <button
+                                                                onClick={() => handleEditFixedCost(fc)}
+                                                                className="text-gray-400 hover:text-emerald-500 transition-colors ml-1"
+                                                            >
+                                                                <Pencil size={12} />
+                                                            </button>
+                                                            {confirmDeleteFixedCostId === fc.id ? (
+                                                                <div className="flex items-center gap-1">
+                                                                    <button
+                                                                        onClick={() => handleDeleteFixedCost(fc.id)}
+                                                                        className="px-2 py-1 rounded bg-red-500 text-white text-[10px] font-bold hover:bg-red-600 whitespace-nowrap"
+                                                                    >
+                                                                        削除
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => setConfirmDeleteFixedCostId(null)}
+                                                                        className="px-2 py-1 rounded bg-gray-200 text-gray-600 text-[10px] font-bold hover:bg-gray-300 whitespace-nowrap"
+                                                                    >
+                                                                        キャンセル
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={() => setConfirmDeleteFixedCostId(fc.id)}
+                                                                    className="text-gray-400 hover:text-red-500 transition-colors"
+                                                                >
+                                                                    <Trash2 size={12} />
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>

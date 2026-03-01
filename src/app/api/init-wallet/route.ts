@@ -9,6 +9,7 @@ const DEFAULT_CATEGORIES = [
     { name: '交通費', type: 'expense', color: '#3b82f6', target_type: 'transaction' },
     { name: '交際費', type: 'expense', color: '#8b5cf6', target_type: 'transaction' },
     { name: '衣服', type: 'expense', color: '#ec4899', target_type: 'transaction' },
+    { name: '美容', type: 'expense', color: '#db2777', target_type: 'transaction' },
     { name: '医療費', type: 'expense', color: '#10b981', target_type: 'transaction' },
     { name: '特別費', type: 'expense', color: '#6366f1', target_type: 'transaction' },
     { name: '趣味', type: 'expense', color: '#14b8a6', target_type: 'transaction' },

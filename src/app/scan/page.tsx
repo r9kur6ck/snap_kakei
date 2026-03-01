@@ -77,7 +77,7 @@ export default function ScanPage() {
             {/* スキャン開始ボタン */}
             <button
                 onClick={() => setShowScanner(true)}
-                className="w-full py-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl shadow-lg flex flex-col items-center gap-3 hover:from-blue-700 hover:to-indigo-700 transition-all active:scale-[0.98]"
+                className="w-full py-6 bg-blue-600 text-white rounded-2xl shadow-lg flex flex-col items-center gap-3 hover:bg-blue-700 transition-all active:scale-[0.98]"
             >
                 <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
                     <Camera size={32} />

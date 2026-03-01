@@ -141,7 +141,7 @@ export default function Home() {
       {/* ヘッダー部分 */}
       <header className="flex justify-between items-center mb-2">
         <div>
-          <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-indigo-600">
+          <h1 className="text-2xl font-bold text-blue-600">
             Snap Kakei
           </h1>
           <p className="text-sm text-gray-500 font-medium">{periodLabel} の家計簿</p>
@@ -174,7 +174,7 @@ export default function Home() {
         <ProgressBar
           value={totalMonthly}
           max={monthlyBudget}
-          colorClass={isOverBudget ? "bg-red-500" : "bg-gradient-to-r from-blue-500 to-indigo-500"}
+          colorClass={isOverBudget ? "bg-red-500" : "bg-blue-500"}
         />
 
         <div className="flex justify-between mt-2">
