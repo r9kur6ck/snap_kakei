@@ -35,19 +35,15 @@ export default function ReceiptScanner({ onScanComplete, onCancel }: ReceiptScan
 
     // 画像圧縮オプション
     const compressionOptions = {
-        maxSizeMB: 1,
-        maxWidthOrHeight: 1600,
+        maxSizeMB: 0.3,
+        maxWidthOrHeight: 1000,
         useWebWorker: true,
         fileType: 'image/webp' as const,
-        initialQuality: 0.85,
+        initialQuality: 0.7,
     };
 
     // 画像圧縮処理
     const compressImage = async (file: File): Promise<File> => {
-        // 既に1MB以下かつ小さい画像はスキップ
-        if (file.size <= 1024 * 1024) {
-            return file;
-        }
         try {
             const compressed = await imageCompression(file, compressionOptions);
             console.log(

@@ -19,8 +19,8 @@ export async function POST(req: Request) {
     // Gemini API クライアントの初期化
     const genAI = new GoogleGenerativeAI(apiKey);
 
-    // 最新の gemini-2.5-flash モデルを使用
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    // 最新の gemini-2.5-flash-lite モデルを使用
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
 
     const prompt = `
       あなたは優秀な入力をアシストするデータ抽出AIです。
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
       - items: レシートに記載されている個別の購入品目の配列。各品目は以下のプロパティを持つこと。
         - itemName: 品名
         - amount: その品目の金額 (数値のみ, カンマなし)
-        - categoryName: その品目が一般的に属するカテゴリ名（例：「食費」「日用品」「交通費」「交際費」「衣服」「医療費」「特別費」などから最も適切なものを推測）
+        - categoryName: その品目が一般的に属するカテゴリ名（例：「食費」「日用品」「交通費」「交際費」「衣服」「医療費」「特別費」「美容」などから最も適切なものを推測）
       
       ※合計金額、消費税のみの行、割引額のみの行などは除外し、具体的な購入品目（商品）のみを配列に含めてください。
       
