@@ -35,11 +35,11 @@ export default function ReceiptScanner({ onScanComplete, onCancel }: ReceiptScan
 
     // 画像圧縮オプション
     const compressionOptions = {
-        maxSizeMB: 0.3,
+        maxSizeMB: 0.5,
         maxWidthOrHeight: 1000,
         useWebWorker: true,
         fileType: 'image/webp' as const,
-        initialQuality: 0.7,
+        initialQuality: 0.8,
     };
 
     // 画像圧縮処理
