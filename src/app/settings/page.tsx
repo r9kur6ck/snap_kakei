@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Download, Palette, Settings } from 'lucide-react';
+import { Download, Palette, Settings, Type } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useWallet } from '@/components/WalletProvider';
 import { useTheme } from 'next-themes';
+import { useFont } from '@/components/FontProvider';
 import { AccordionItem } from '@/components/Accordion';
 
 interface Category {
@@ -23,8 +24,9 @@ export default function SettingsPage() {
     const [billingStartDate, setBillingStartDate] = useState('1');
     const [budgetSaved, setBudgetSaved] = useState(false);
 
-    // テーマ設定
+    // テーマ・フォント設定
     const { theme, setTheme } = useTheme();
+    const { font, setFont } = useFont();
     const [mounted, setMounted] = useState(false);
 
     // データ取得
@@ -194,6 +196,61 @@ export default function SettingsPage() {
                         >
                             <div className="w-6 h-6 rounded-full mb-2" style={{ backgroundColor: '#4b5563' }}></div>
                             <span className={`text-xs font-semibold ${theme === 'monochrome' ? 'text-gray-800' : 'text-gray-600'}`}>モノクロ</span>
+                        </button>
+
+                        <button
+                            onClick={() => setTheme('retro')}
+                            className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${theme === 'retro' ? 'border-[#8d3b2f] bg-[#e8dcc6]' : 'border-gray-100 bg-white hover:border-[#dcd0ba]'}`}
+                        >
+                            <div className="w-6 h-6 rounded-full mb-2" style={{ backgroundColor: '#8d3b2f' }}></div>
+                            <span className={`text-xs font-semibold ${theme === 'retro' ? 'text-[#8d3b2f]' : 'text-gray-600'}`}>レトロ</span>
+                        </button>
+
+                        <button
+                            onClick={() => setTheme('slate')}
+                            className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${theme === 'slate' ? 'border-[#517792] bg-[#d1dae1]' : 'border-gray-100 bg-white hover:border-[#becad5]'}`}
+                        >
+                            <div className="w-6 h-6 rounded-full mb-2 border border-[#d1dae1]" style={{ backgroundColor: '#ffffff' }}></div>
+                            <span className={`text-xs font-semibold ${theme === 'slate' ? 'text-[#517792]' : 'text-gray-600'}`}>スレート</span>
+                        </button>
+                    </div>
+                </AccordionItem>
+            )}
+
+            {/* フォント設定 */}
+            {mounted && (
+                <AccordionItem title={<><Type size={18} className="text-indigo-500" /> フォント設定</>}>
+                    <div className="grid grid-cols-2 gap-3 mt-2">
+                        <button
+                            onClick={() => setFont('mplus')}
+                            className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${font === 'mplus' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-100 bg-white hover:border-indigo-200'}`}
+                        >
+                            <span className={`text-base font-bold font-[var(--font-mplus-rounded)] mb-1 ${font === 'mplus' ? 'text-indigo-700' : 'text-gray-800'}`}>丸ゴシック</span>
+                            <span className="text-[10px] text-gray-500">標準・やわらかい</span>
+                        </button>
+
+                        <button
+                            onClick={() => setFont('serif')}
+                            className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${font === 'serif' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-100 bg-white hover:border-indigo-200'}`}
+                        >
+                            <span className={`text-base font-bold mb-1 ${font === 'serif' ? 'text-indigo-700' : 'text-gray-800'}`} style={{ fontFamily: 'var(--font-noto-serif)' }}>明朝体</span>
+                            <span className="text-[10px] text-gray-500">シック・大人っぽい</span>
+                        </button>
+
+                        <button
+                            onClick={() => setFont('gothic')}
+                            className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${font === 'gothic' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-100 bg-white hover:border-indigo-200'}`}
+                        >
+                            <span className={`text-base font-bold mb-1 ${font === 'gothic' ? 'text-indigo-700' : 'text-gray-800'}`} style={{ fontFamily: 'var(--font-zen-kaku)' }}>角ゴシック</span>
+                            <span className="text-[10px] text-gray-500">シンプル・スッキリ</span>
+                        </button>
+
+                        <button
+                            onClick={() => setFont('pop')}
+                            className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${font === 'pop' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-100 bg-white hover:border-indigo-200'}`}
+                        >
+                            <span className={`text-base font-bold mb-1 ${font === 'pop' ? 'text-indigo-700' : 'text-gray-800'}`} style={{ fontFamily: 'var(--font-hachi-maru)' }}>手書き風</span>
+                            <span className="text-[10px] text-gray-500">カジュアル・ポップ</span>
                         </button>
                     </div>
                 </AccordionItem>

@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, M_PLUS_Rounded_1c } from "next/font/google"; // 変更
+import { Geist, Geist_Mono, M_PLUS_Rounded_1c, Noto_Serif_JP, Hachi_Maru_Pop, Zen_Kaku_Gothic_New } from "next/font/google";
 import "./globals.css";
 import BottomNav from "@/components/BottomNav";
 import AuthProvider from "@/components/AuthProvider";
 import WalletProvider from "@/components/WalletProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { FontProvider } from "@/components/FontProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,11 +17,31 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// 新しいフォントを追加
 const mPlusRounded = M_PLUS_Rounded_1c({
   weight: ['100', '300', '400', '500', '700', '800', '900'],
   subsets: ['latin'],
   variable: '--font-mplus-rounded',
+  display: 'swap',
+});
+
+const notoSerifJP = Noto_Serif_JP({
+  weight: ['400', '700'],
+  subsets: ['latin'],
+  variable: '--font-noto-serif',
+  display: 'swap',
+});
+
+const hachiMaruPop = Hachi_Maru_Pop({
+  weight: ['400'],
+  subsets: ['latin'],
+  variable: '--font-hachi-maru',
+  display: 'swap',
+});
+
+const zenKakuGothic = Zen_Kaku_Gothic_New({
+  weight: ['400', '500', '700'],
+  subsets: ['latin'],
+  variable: '--font-zen-kaku',
   display: 'swap',
 });
 
@@ -52,20 +73,22 @@ export default function RootLayout({
   return (
     <html lang="ja" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${mPlusRounded.variable} font-mplus antialiased bg-gray-50 min-h-screen flex text-gray-900`}
+        className={`${geistSans.variable} ${geistMono.variable} ${mPlusRounded.variable} ${notoSerifJP.variable} ${hachiMaruPop.variable} ${zenKakuGothic.variable} antialiased min-h-screen flex text-gray-900 bg-gray-50`}
       >
         <ThemeProvider attribute="data-theme" defaultTheme="light" enableSystem={false}>
-          <AuthProvider>
-            <WalletProvider>
-              {/* モバイルアプリのレイアウトを模倣するため、最大幅を制限して中央配置 */}
-              <div className="w-full max-w-md mx-auto bg-blue-50 flex flex-col min-h-screen relative shadow-2xl overflow-hidden">
-                <main className="flex-1 overflow-y-auto pb-20">
-                  {children}
-                </main>
-                <BottomNav />
-              </div>
-            </WalletProvider>
-          </AuthProvider>
+          <FontProvider>
+            <AuthProvider>
+              <WalletProvider>
+                {/* モバイルアプリのレイアウトを模倣するため、最大幅を制限して中央配置 */}
+                <div className="w-full max-w-md mx-auto bg-blue-50 flex flex-col min-h-screen relative shadow-2xl overflow-hidden">
+                  <main className="flex-1 overflow-y-auto pb-20">
+                    {children}
+                  </main>
+                  <BottomNav />
+                </div>
+              </WalletProvider>
+            </AuthProvider>
+          </FontProvider>
         </ThemeProvider>
       </body>
     </html>
