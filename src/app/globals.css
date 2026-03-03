@@ -145,7 +145,7 @@
 }
 
 [data-theme='slate'] {
-  /* ユーザー指定: 背景 #d1dae1, 文字 白 */
+  /* ユーザー指定: 背景 #d1dae1, 文字 白 -> 改善案3: 文字色を暗色に変更 */
   --color-blue-50: #d1dae1;
   --color-blue-100: #becad5;
   --color-blue-200: #a9bac8;
@@ -157,28 +157,28 @@
   --color-blue-800: #255577;
   --color-blue-900: #0f4569;
 
-  /* 文字色（グレー系統）を白に置き換え */
+  /* 文字色（グレー系統）を一番濃いスレートブルーベースに置き換え */
   --color-gray-50: #ffffff;
-  --color-gray-100: rgba(255, 255, 255, 0.9);
-  --color-gray-200: rgba(255, 255, 255, 0.8);
-  --color-gray-300: rgba(255, 255, 255, 0.7);
-  --color-gray-400: rgba(255, 255, 255, 0.8);
-  --color-gray-500: rgba(255, 255, 255, 0.9);
-  --color-gray-600: #ffffff;
-  --color-gray-700: #ffffff;
-  --color-gray-800: #ffffff;
-  --color-gray-900: #ffffff;
+  --color-gray-100: #eef2f5;
+  --color-gray-200: #d1dae1;
+  --color-gray-300: #a9bac8;
+  --color-gray-400: #7e99ad;
+  --color-gray-500: #517792;
+  --color-gray-600: #3b6684;
+  --color-gray-700: #255577;
+  --color-gray-800: #1b425e;
+  --color-gray-900: #0f4569;
 
-  /* その他アクセントカラー */
-  --color-indigo-500: #ffffff;
-  --color-emerald-50: rgba(255, 255, 255, 0.1);
-  --color-emerald-100: rgba(255, 255, 255, 0.2);
-  --color-emerald-500: rgba(255, 255, 255, 0.8);
-  --color-emerald-600: #ffffff;
-  --color-teal-600: #ffffff;
+  /* その他アクセントカラー (文字色として使われる想定で暗めに) */
+  --color-indigo-500: #255577;
+  --color-emerald-50: #eef2f5;
+  --color-emerald-100: #d1dae1;
+  --color-emerald-500: #517792;
+  --color-emerald-600: #255577;
+  --color-teal-600: #0f4569;
 
-  /* bg-white が白だと白文字が見えないため透過させる */
-  --color-white: rgba(255, 255, 255, 0.2);
+  /* カード背景の透過白は一旦標準に戻すか、少し透過を弱める */
+  --color-white: rgba(255, 255, 255, 0.65);
 }
 
 
